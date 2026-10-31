@@ -1,113 +1,80 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useCallback } from "react";
-import { ethers } from "ethers";
-import { contractService } from "../lib/contracts";
-import { CONFIG } from "../lib/config";
-import { formatAddress } from "../lib/tier-utils";
+import { useState } from "react";
 
 export function Header() {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [chainId, setChainId] = useState<number | null>(null);
-  const [totalMinted, setTotalMinted] = useState<number>(0);
-  const [hasMinted, setHasMinted] = useState<boolean>(false);
-  const [agentBalance, setAgentBalance] = useState<number>(0);
-  const [challenge, setChallenge] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
-
-  const connectWallet = useCallback(async () => {
-    if (typeof window === "undefined") return;
-    const { ethereum } = window as any;
-    if (!ethereum) {
-      alert("MetaMask not installed! Please install MetaMask to use this dApp.");
-      return;
-    }
-
-    try {
-      const provider = new ethers.BrowserProvider(ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const network = await provider.getNetwork();
-
-      await provider.send("wallet_switchEthereumChain", [
-        { chainId: `0x${CONFIG.chainId.toString(16)}` },
-      ]);
-
-      setWalletAddress(accounts[0]);
-      setChainId(Number(network.chainId));
-      setIsConnected(true);
-
-      await contractService.init(provider);
-      await refreshStatus(accounts[0]);
-    } catch (e) {
-      console.error("Connect error:", e);
-    }
-  }, []);
-
-  const refreshStatus = useCallback(async (address: string) => {
-    setTotalMinted(await contractService.totalMinted());
-    setHasMinted(await contractService.hasMinted(address));
-    setAgentBalance(await contractService.hasAgentId(address));
-    const ch = await contractService.challengeFor(address);
-    setChallenge(ch.slice(0, 10) + "\u2026");
-  }, []);
-
-  const isWrongNetwork = chainId !== null && chainId !== CONFIG.chainId;
-
-  const disconnectWallet = useCallback(() => {
-    setWalletAddress(null);
-    setChainId(null);
-    setTotalMinted(0);
-    setHasMinted(false);
-    setAgentBalance(0);
-    setChallenge(null);
-    setIsConnected(false);
-  }, []);
-
-  useEffect(() => {
-    const { ethereum } = window as any;
-    if (ethereum) {
-      ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
-        if (accounts.length > 0) {
-          connectWallet();
-        }
-      });
-    }
-  }, [connectWallet]);
+  const [open, setOpen] = useState(false);
 
   return (
-    <header className="bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 sticky top-0 z-20">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-gray-300 text-sm font-medium hover:text-white transition-colors"
+    <header className="sticky top-0 z-20 border-b border-neutral-800 bg-background/80 backdrop-blur-md">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <Link
+          href="/"
+          className="flex items-center gap-2"
+        >
+          <svg
+            className="w-6 h-6 text-accent-gold"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
           >
-            <svg
-              className="h-5 w-5 text-yellow-500"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-            </svg>
-            Aegis Crown<br/>AEGIS
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+          <div className="flex flex-col leading-tight">
+            <span className="text-primary font-semibold tracking-tight">Aegis Crown</span>
+            <span className="text-secondary text-xs tracking-widest uppercase">AEGIS</span>
+          </div>
+        </Link>
+
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+          <Link
+            href="/market"
+            className="text-primary hover:text-accent-gold transition-colors"
+          >
+            Market
           </Link>
-          <nav className="hidden md:flex items-center gap-4">
+          <Link
+            href="#mint"
+            className="text-primary hover:text-accent-gold transition-colors"
+          >
+            Mint for Agents
+          </Link>
+        </div>
+
+        <button
+          className="md:hidden p-2 text-primary focus:outline-none"
+          onClick={() => setOpen(!open)}
+          aria-label="Open menu"
+          aria-expanded={open}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+          </svg>
+        </button>
+      </div>
+
+      {open && (
+        <div className="md:hidden max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 border-t border-neutral-800 bg-background">
+          <nav className="py-4 space-y-4">
             <Link
               href="/market"
-              className="text-gray-400 hover:text-yellow-400 transition-colors text-sm font-medium"
+              onClick={() => setOpen(false)}
+              className="block text-sm font-medium text-primary hover:text-accent-gold transition-colors"
             >
               Market
             </Link>
             <Link
-              href="/mininlist"
-              className="text-gray-400 hover:text-yellow-400 transition-colors text-sm font-medium"
+              href="#mint"
+              onClick={() => setOpen(false)}
+              className="block text-sm font-medium text-primary hover:text-accent-gold transition-colors"
             >
-              Mininlist
+              Mint for Agents
             </Link>
           </nav>
         </div>
-      </div>
+      )}
     </header>
   );
 }

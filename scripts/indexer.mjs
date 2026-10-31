@@ -82,6 +82,10 @@ async function main() {
     const dayMs = 24 * 60 * 60 * 1000;
     const weekMs = 7 * dayMs;
 
+    let totalVolume = 0n;
+    let volume24h = 0n;
+    let volume7d = 0n;
+
     // Active listings: listed but not cancelled/bought
     const listedMap = new Map();
     const cancelledSet = new Set();
@@ -151,12 +155,9 @@ async function main() {
     const activeListings = [...listedMap.values()].sort((a, b) => a.price.localeCompare(b.price));
 
     // Floor price
-    const floorPrice = activeListings.length > 0 ? activeListings[0].price : "0";
+    const floorPrice = activeListings.length > 0 ? activeListings[0].price : null;
 
     // Total volume from Bought events
-    let totalVolume = 0n;
-    let volume24h = 0n;
-    let volume7d = 0n;
 
     const recentSales = [];
 
@@ -247,7 +248,7 @@ async function main() {
       blockNumber: latestBlock,
       stats: {
         floorPrice: floorPrice,
-        floorPriceBnb: parseFloat(ethers.formatEther(floorPrice)).toFixed(4),
+        floorPriceBnb: floorPrice ? parseFloat(ethers.formatEther(floorPrice)).toFixed(4) : null,
         totalVolume: totalVolume.toString(),
         totalVolumeBnb: parseFloat(ethers.formatEther(totalVolume)).toFixed(4),
         volume24h: volume24h.toString(),
@@ -315,14 +316,14 @@ function writeEmptyOutput() {
     updatedAt: new Date().toISOString(),
     blockNumber: 0,
     stats: {
-      floorPrice: "0",
-      floorPriceBnb: "0",
-      totalVolume: "0",
-      totalVolumeBnb: "0",
-      volume24h: "0",
-      volume24hBnb: "0",
-      volume7d: "0",
-      volume7dBnb: "0",
+      floorPrice: null,
+      floorPriceBnb: null,
+      totalVolume: null,
+      totalVolumeBnb: null,
+      volume24h: null,
+      volume24hBnb: null,
+      volume7d: null,
+      volume7dBnb: null,
       listedCount: 0,
       listedPercent: 0,
       ownersCount: 0,

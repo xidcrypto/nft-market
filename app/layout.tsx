@@ -5,9 +5,7 @@ import { Header } from "./components/header-component";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#1a1a2e",
+  themeColor: "#0A0A0B",
   colorScheme: "dark",
 };
 

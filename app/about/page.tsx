@@ -14,13 +14,13 @@ const TIER_DATA = [
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
-      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
+    <main className="min-h-screen bg-background text-primary antialiased">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Title + intro */}
-        <section>
+        <section className="py-12 md:py-16">
           <h1 className="text-2xl font-semibold text-accent-gold mb-4">About Aegis Crown</h1>
-          <p className="text-secondary leading-relaxed max-w-2xl">
+          <p className="text-secondary leading-relaxed max-w-2xl mb-4">
             Aegis Crown (AEGIS) is a 5,000-piece collectible NFT collection on BNB Chain (chainId 56). Minting is gated through the Binance Agent ID registry — each Agent ID can mint once, forever. There is no cost beyond gas. Collectible only: no promised returns, no yield, no guaranteed value.
           </p>
           <p className="text-secondary mt-2 max-w-2xl">
@@ -29,14 +29,14 @@ export default function AboutPage() {
         </section>
 
         {/* Tier table */}
-        <section>
+        <section className="py-12 md:py-16 border-t border-border">
           <h2 className="text-lg font-semibold text-primary mb-4">Tiers (V2)</h2>
-          <p className="text-secondary text-sm mb-4">
+          <p className="text-secondary text-sm mb-6">
             Rarity derived on-chain from the mint solution hash: &lt;1% Mythic, &lt;3% Legendary, &lt;15% Epic, &lt;40% Rare, rest Common.
           </p>
           <div className="border border-border divide-y border-border">
             {TIER_DATA.map((t) => (
-              <div key={t.tier} className="flex items-center gap-4 px-4 py-3">
+              <div key={t.tier} className="flex items-center gap-4 px-4 py-4">
                 <div className="w-16 h-16 rounded-2xl border border-border overflow-hidden shrink-0 relative">
                   <Image
                     src={getTierImage(t.tier)}
@@ -59,9 +59,9 @@ export default function AboutPage() {
         </section>
 
         {/* How minting works */}
-        <section>
+        <section className="py-12 md:py-16 border-t border-border">
           <h2 className="text-lg font-semibold text-primary mb-4">How Minting Works (V2)</h2>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-secondary">
+          <ol className="list-decimal list-inside space-y-3 text-sm text-secondary mb-6">
             <li>
               Find your Agent ID tokenId on <a href="https://bscscan.com/token/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F" target="_blank" rel="noopener noreferrer" className="text-accent-gold hover:underline">BscScan</a> (tokenOfOwnerByIndex and totalSupply are not exposed — look up by wallet).
             </li>
@@ -90,9 +90,9 @@ export default function AboutPage() {
         </section>
 
         {/* Market rules */}
-        <section>
+        <section className="py-12 md:py-16 border-t border-border">
           <h2 className="text-lg font-semibold text-primary mb-4">Market Rules (V2)</h2>
-          <ul className="space-y-2 text-sm text-secondary">
+          <ul className="space-y-3 text-sm text-secondary">
             <li>Fee: 3% (300 bps), deducted from seller proceeds on-chain in the same tx.</li>
             <li>Buyer pays exactly the listed price — no extra fee on top.</li>
             <li>Seller receives 97% of the listed price.</li>
@@ -102,21 +102,21 @@ export default function AboutPage() {
         </section>
 
         {/* Contracts */}
-        <section>
+        <section className="py-12 md:py-16 border-t border-border">
           <h2 className="text-lg font-semibold text-primary mb-4">Contracts</h2>
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
               <span className="text-secondary shrink-0 sm:w-24">NFT V2 (active):</span>
               <span className="font-mono text-accent-gold break-all">{CONFIG.nftV2}</span>
               <Link href={`https://bscscan.com/address/${CONFIG.nftV2}`} target="_blank" rel="noopener noreferrer" className="text-secondary hover:text-primary underline text-xs">
-                BscScan
+                BscScan V2
               </Link>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
               <span className="text-secondary shrink-0 sm:w-24">Market V2 (active):</span>
               <span className="font-mono text-accent-gold break-all">{CONFIG.marketV2}</span>
               <Link href={`https://bscscan.com/address/${CONFIG.marketV2}`} target="_blank" rel="noopener noreferrer" className="text-secondary hover:text-primary underline text-xs">
-                BscScan
+                BscScan V2
               </Link>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
@@ -146,7 +146,7 @@ export default function AboutPage() {
         </section>
 
         {/* FAQ */}
-        <section>
+        <section className="py-12 md:py-16 border-t border-border">
           <h2 className="text-lg font-semibold text-primary mb-4">FAQ</h2>
           <div className="space-y-4 text-sm">
             <div>
@@ -169,7 +169,7 @@ export default function AboutPage() {
         </section>
 
         {/* Disclaimer */}
-        <section className="pt-4 border-t border-border">
+        <section className="py-12 md:py-16 border-t border-border pb-12">
           <p className="text-xs text-secondary">
             Collectible only. No promised returns, no yield, no guaranteed value.
           </p>

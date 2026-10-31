@@ -111,6 +111,13 @@ export default function MarketPage() {
     setBuyPreview({ tokenId, price: listing.priceBnb, priceWei: listing.priceWei });
   }, [sortedListings]);
 
+  const [buyPreview, setBuyPreview] = useState<{
+    tokenId: number;
+    price: string;
+    priceWei: string;
+  } | null>(null);
+  const [confirming, setConfirming] = useState(false);
+
   const handleConfirmBuy = async () => {
     if (!buyPreview || !signer) return;
     setConfirming(true);
@@ -133,174 +140,168 @@ export default function MarketPage() {
     }
   };
 
-  const [buyPreview, setBuyPreview] = useState<{
-    tokenId: number;
-    price: string;
-    priceWei: string;
-  } | null>(null);
-  const [confirming, setConfirming] = useState(false);
-
   const s = marketData;
   const canBuy = isConnected;
   const recentActivity = sales.data ?? [];
 
   return (
-    <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
-      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <main className="min-h-screen bg-background text-primary antialiased">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Stats strip - mobile 4 in 2x2, desktop 7 in row */}
-        <div className="border-t border-border border-b border-border py-4">
-          <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-center text-xs text-secondary">
-            <div className="border-r border-border last:border-r-0 py-1">
+        {/* Stats strip */}
+        <section className="border-t border-border border-b border-border py-8 md:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-4 md:gap-2 text-center text-xs text-secondary">
+            <div className="border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Floor</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {s?.floorPriceBnb ? `${s.floorPriceBnb} BNB` : "—"}
               </div>
             </div>
-            <div className="border-r border-border last:border-r-0 py-1">
+            <div className="border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Listed</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {s?.listedCount ?? "—"}
               </div>
             </div>
-            <div className="border-r border-border last:border-r-0 py-1">
+            <div className="border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Minted</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {s ? `${s.totalMinted}/${s.maxSupply}` : "—"}
               </div>
             </div>
-            <div className="border-r border-border last:border-r-0 py-1">
+            <div className="border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Owners</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {s?.ownersCount ?? "—"}
               </div>
             </div>
-            <div className="hidden md:block border-r border-border last:border-r-0 py-1">
+            <div className="hidden md:block border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Total Vol</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {s?.totalVolumeBnb ? `${s.totalVolumeBnb} BNB` : "—"}
               </div>
             </div>
-            <div className="hidden md:block border-r border-border last:border-r-0 py-1">
+            <div className="hidden md:block border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">24h Vol</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {s?.volume24hBnb ? `${s.volume24hBnb} BNB` : "—"}
               </div>
             </div>
-            <div className="hidden md:block border-r border-border last:border-r-0 py-1">
+            <div className="hidden md:block border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Last Sale</div>
               <div className="text-accent-gold font-medium tabular-nums">
                 {recentActivity[0]?.priceBnb ? `${recentActivity[0].priceBnb} BNB` : "—"}
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Search + Sort */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <input
-            type="text"
-            value={searchTokenId}
-            onChange={(e) => setSearchTokenId(e.target.value)}
-            placeholder="Search tokenId…"
-            className="flex-1 bg-surface/30 border border-border rounded-lg px-4 py-2.5 text-sm text-primary placeholder-secondary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
-          />
-          <select
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            value={sortBy}
-            className="bg-surface/30 border border-border rounded-lg px-4 py-2.5 text-sm text-primary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
-          >
-            <option value="price-asc">Price Low → High</option>
-            <option value="price-desc">Price High → Low</option>
-          </select>
-        </div>
+        <section className="py-6">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <input
+              type="text"
+              value={searchTokenId}
+              onChange={(e) => setSearchTokenId(e.target.value)}
+              placeholder="Search tokenId…"
+              className="flex-1 bg-surface/30 border border-border rounded-lg px-4 py-2.5 text-sm text-primary placeholder-secondary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
+            />
+            <select
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              value={sortBy}
+              className="bg-surface/30 border border-border rounded-lg px-4 py-2.5 text-sm text-primary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
+            >
+              <option value="price-asc">Price Low → High</option>
+              <option value="price-desc">Price High → Low</option>
+            </select>
+          </div>
+        </section>
 
-        {/* Listings - visible by default, no overlay */}
-        <div className="space-y-2">
+        {/* Listings */}
+        <section className="py-6">
           {stats.loading || listings.loading ? (
-            <div className="text-center py-12 text-secondary">Loading listings…</div>
+            <div className="text-center py-16 text-secondary">Loading listings…</div>
           ) : sortedListings.length === 0 ? (
-            <div className="border border-border rounded-2xl p-8 text-center">
+            <div className="border border-border rounded-2xl p-12 md:p-16 text-center">
               <svg className="w-12 h-12 mx-auto text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
               <p className="text-secondary mb-4">No listings yet — be the first to list</p>
               <Link
                 href="/mint"
-                className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
+                className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus-ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
               >
                 Go to Mint
               </Link>
             </div>
           ) : (
-            sortedListings.map((l) => {
-              const tier = parseTierFromToken(l.tokenId);
-              const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
-              return (
-                <div
-                  key={l.tokenId}
-                  className="bg-surface/30 border border-border rounded-xl p-4 sm:flex sm:items-center sm:gap-4"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-                    <div className="relative w-14 h-14 sm:w-14 sm:h-14 rounded-xl border border-border overflow-hidden shrink-0">
-                      <Image
-                        src={getTierImage(tier)}
-                        alt={tierName}
-                        width={56}
-                        height={56}
-                        className="object-cover w-full h-full"
-                        decoding="async"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0 sm:text-left text-center sm:text-left">
-                      <div className="flex items-baseline justify-between sm:justify-start gap-2 mb-1">
-                        <span className="text-sm font-medium truncate">Aegis Crown #{l.tokenId}</span>
-                        <span className="text-[10px] text-secondary">{tierName}</span>
+            <div className="space-y-4">
+              {sortedListings.map((l) => {
+                const tier = parseTierFromToken(l.tokenId);
+                const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
+                return (
+                  <div key={l.tokenId} className="bg-surface/30 border border-border rounded-xl p-6 sm:flex sm:items-center sm:gap-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto">
+                      <div className="relative w-14 h-14 sm:w-14 sm:h-14 rounded-xl border border-border overflow-hidden shrink-0">
+                        <Image
+                          src={getTierImage(tier)}
+                          alt={tierName}
+                          width={56}
+                          height={56}
+                          className="object-cover w-full h-full"
+                          decoding="async"
+                        />
                       </div>
-                      <div className="text-xs text-secondary">
-                        Seller: <span className="break-all font-mono">{formatAddress(l.seller)}</span>
+                      <div className="flex-1 min-w-0 sm:text-left text-center sm:text-left">
+                        <div className="flex items-baseline justify-between sm:justify-start gap-2 mb-1">
+                          <span className="text-sm font-medium truncate">Aegis Crown #{l.tokenId}</span>
+                          <span className="text-[10px] text-secondary">{tierName}</span>
+                        </div>
+                        <div className="text-xs text-secondary">
+                          Seller: <span className="break-all font-mono">{formatAddress(l.seller)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4 sm:mt-0 sm:w-auto flex sm:flex-col items-center sm:items-end gap-3 sm:gap-0 w-full sm:w-auto">
-                    <span className="text-lg font-medium text-accent-gold tabular-nums whitespace-nowrap">{l.priceBnb} BNB</span>
-                    {!canBuy ? (
-                      <button
-                        onClick={connectWallet}
-                        className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
-                      >
-                        Connect EVM Wallet — for buying only
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleBuy(l.tokenId)}
-                        disabled={confirming}
-                        className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-primary bg-neutral-700 hover:bg-neutral-600 rounded-lg focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150 disabled:opacity-50"
-                      >
-                        {confirming && buyPreview?.tokenId === l.tokenId ? "Signing…" : "Buy"}
-                      </button>
-                    )}
+                    <div className="mt-6 sm:mt-0 sm:w-auto flex sm:flex-col items-center sm:items-end gap-4 w-full sm:w-auto">
+                      <span className="text-lg font-medium text-accent-gold tabular-nums whitespace-nowrap">{l.priceBnb} BNB</span>
+                      {!canBuy ? (
+                        <button
+                          onClick={connectWallet}
+                          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
+                        >
+                          Connect EVM Wallet — for buying only
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleBuy(l.tokenId)}
+                          disabled={confirming}
+                          className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-primary bg-neutral-700 hover:bg-neutral-600 rounded-lg focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150 disabled:opacity-50"
+                        >
+                          {confirming && buyPreview?.tokenId === l.tokenId ? "Signing…" : "Buy"}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
-        </div>
+        </section>
 
         {/* Recent Activity */}
-        <section className="pt-8 border-t border-border">
-          <h2 className="text-lg font-semibold text-primary mb-4">Recent Activity</h2>
+        <section className="pt-12 border-t border-border pb-12">
+          <h2 className="text-lg font-semibold text-primary mb-6">Recent Activity</h2>
           {recentActivity.length === 0 ? (
             <p className="text-secondary text-sm">No activity yet.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {recentActivity.map((a: any, idx: number) => {
                 const tier = parseTierFromToken(a.tokenId);
                 const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
                 return (
-                  <div key={`${a.type}-${a.tokenId}-${idx}`} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
-                    <div className="flex items-center gap-3">
+                  <div key={`${a.type}-${a.tokenId}-${idx}`} className="flex items-center justify-between py-4 border-b border-border last:border-b-0">
+                    <div className="flex items-center gap-4">
                       <img src={getTierImage(tier)} alt={tierName} className="w-10 h-10 rounded-lg border border-border object-cover" />
                       <div>
                         <div className="text-sm font-medium">
@@ -332,13 +333,13 @@ export default function MarketPage() {
         )}
 
         {error && (
-          <div className="mt-4 p-3 text-xs text-secondary bg-surface/30 rounded-lg border border-border">
+          <div className="mt-6 p-4 text-xs text-secondary bg-surface/30 rounded-lg border border-border">
             {error}
           </div>
         )}
 
         {lastUpdated && (
-          <p className="mt-4 text-[10px] text-secondary text-center">
+          <p className="mt-8 text-[10px] text-secondary text-center">
             Live · Updated {formatLastUpdated(lastUpdated)}
           </p>
         )}

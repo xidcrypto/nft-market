@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-10-31T08:28:27.821Z",
-  "blockNumber": 130825072,
+  "updatedAt": "2026-10-31T11:11:18.666Z",
+  "blockNumber": 130845833,
   "stats": {
     "floorPrice": null,
     "floorPriceBnb": null,
@@ -13,7 +13,7 @@
     "listedCount": 0,
     "listedPercent": "0.00",
     "ownersCount": 0,
-    "totalSupplyMinted": 25,
+    "totalSupplyMinted": 0,
     "maxSupply": 5000
   },
   "listings": [],

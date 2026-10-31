@@ -14,7 +14,6 @@ export const CONFIG = {
   v1DeployBlock: 130795756,
   v1Minted: 25,
   v1MintClosed: true,
-  creatorWallet: "0xD7F96c23Af0e65DC28A14111C994aa48701105D5" as `0x${string}`,
   maxSupply: 5000,
   royaltyPercent: 3,
   baseUri: "ipfs://QmQ4oJiRy2GbXSwi2XAUM2T6BYhnC2eEcKE1Vzjm3kQHCB/",

@@ -63,12 +63,12 @@ export class ContractService {
     ]);
 
     this.aegisCrownContract = new ethers.Contract(
-      CONFIG.aegisCrownAddress,
+      CONFIG.nftV2,
       AEGIS_CROWN_ABI,
       this.signer
     );
     this.aegisMarketContract = new ethers.Contract(
-      CONFIG.aegisMarketAddress,
+      CONFIG.marketV2,
       AEGIS_MARKET_ABI,
       this.signer
     );
@@ -105,7 +105,7 @@ export class ContractService {
     if (this.mode === "mock") {
       const data = ethers.solidityPacked(
         ["address", "address", "uint256"],
-        [wallet, CONFIG.aegisCrownAddress, CONFIG.chainId]
+        [wallet, CONFIG.nftV2, CONFIG.chainId]
       );
       return ethers.keccak256(data);
     }
@@ -183,12 +183,12 @@ export class MarketContractService {
     const prov = signer.provider;
     this.provider = (prov instanceof ethers.BrowserProvider ? prov : (prov as ethers.JsonRpcProvider | null)) ?? null;
     this.marketContract = new ethers.Contract(
-      CONFIG.aegisMarketAddress,
+      CONFIG.marketV2,
       AEGIS_MARKET_ABI,
       signer
     );
     this.erc721Contract = new ethers.Contract(
-      CONFIG.aegisCrownAddress,
+      CONFIG.nftV2,
       ERC721_ABI,
       signer
     );
@@ -262,7 +262,7 @@ export class MarketContractService {
   async list(tokenId: number, price: string): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
     if (this.mode === "mock") {
       return {
-        to: CONFIG.aegisMarketAddress,
+        to: CONFIG.marketV2,
         value: "0",
         gasLimit: "150000",
         description: `List tokenId #${tokenId} for ${formatPriceBnb(price)} BNB`,
@@ -272,7 +272,7 @@ export class MarketContractService {
     const value = ethers.parseUnits(price, 18);
     const tx = await this.marketContract.list(tokenId, value);
     return {
-      to: CONFIG.aegisMarketAddress,
+      to: CONFIG.marketV2,
       value: "0",
       gasLimit: tx.gasLimit.toString(),
       description: `List tokenId #${tokenId} for ${formatPriceBnb(price)} BNB`,
@@ -282,7 +282,7 @@ export class MarketContractService {
   async buy(tokenId: number, price: string): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
     if (this.mode === "mock") {
       return {
-        to: CONFIG.aegisMarketAddress,
+        to: CONFIG.marketV2,
         value: price,
         gasLimit: "200000",
         description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB (3% fee to creator is deducted from the price inside the contract, seller receives 97%)`,
@@ -292,7 +292,7 @@ export class MarketContractService {
     const priceWei = ethers.parseUnits(price, 18);
     const tx = await this.marketContract.buy(tokenId, { value: priceWei });
     return {
-      to: CONFIG.aegisMarketAddress,
+      to: CONFIG.marketV2,
       value: price,
       gasLimit: tx.gasLimit.toString(),
       description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB (3% fee to creator is deducted from the price inside the contract, seller receives 97%)`,
@@ -302,7 +302,7 @@ export class MarketContractService {
   async cancel(tokenId: number): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
     if (this.mode === "mock") {
       return {
-        to: CONFIG.aegisMarketAddress,
+        to: CONFIG.marketV2,
         value: "0",
         gasLimit: "100000",
         description: `Cancel listing for tokenId #${tokenId}`,
@@ -311,7 +311,7 @@ export class MarketContractService {
     if (!this.marketContract) throw new Error("Market contract not initialized");
     const tx = await this.marketContract.cancel(tokenId);
     return {
-      to: CONFIG.aegisMarketAddress,
+      to: CONFIG.marketV2,
       value: "0",
       gasLimit: tx.gasLimit.toString(),
       description: `Cancel listing for tokenId #${tokenId}`,
@@ -327,7 +327,7 @@ export class MarketContractService {
   async approveForAll(operator: string, approved: boolean): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
     if (this.mode === "mock") {
       return {
-        to: CONFIG.aegisCrownAddress,
+        to: CONFIG.nftV2,
         value: "0",
         gasLimit: "80000",
         description: `${approved ? "Approve" : "Revoke"} all tokens for marketplace`,
@@ -336,7 +336,7 @@ export class MarketContractService {
     if (!this.erc721Contract) throw new Error("ERC721 contract not initialized");
     const tx = await this.erc721Contract.setApprovalForAll(operator, approved);
     return {
-      to: CONFIG.aegisCrownAddress,
+      to: CONFIG.nftV2,
       value: "0",
       gasLimit: tx.gasLimit.toString(),
       description: `${approved ? "Approve" : "Revoke"} all tokens for marketplace`,

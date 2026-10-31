@@ -45,19 +45,19 @@ export default function HomePage() {
   const loading = stats.loading || listings.loading;
 
   return (
-    <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
-      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
+    <main className="min-h-screen bg-background text-primary antialiased">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Hero */}
-        <section className="text-center max-w-[720px] mx-auto">
+        <section className="py-24 md:py-32 text-center">
           <p className="text-[10px] text-secondary uppercase tracking-widest mb-4">
             BNB Chain · Free Mint for Agent ID Holders
           </p>
-          <h1 className="text-accent-gold font-semibold tracking-tighter mb-4" style={{ fontSize: "clamp(32px, 6vw, 56px)", lineHeight: "1.05" }}>
+          <h1 className="text-accent-gold font-semibold tracking-tighter mb-6" style={{ fontSize: "clamp(32px, 6vw, 56px)", lineHeight: "1.1" }}>
             Aegis Crown
           </h1>
-          <p className="text-secondary leading-relaxed mb-8 max-w-full mx-auto">
-            A 5,000-piece collectible for Binance Agent ID holders. One per wallet. Gas only.
+          <p className="text-secondary leading-relaxed mb-8 max-w-[600px] mx-auto text-lg">
+            A 5,000-piece collectible for Binance Agent ID holders. One per Agent ID. Gas only.
           </p>
           <img
             src={getTierImage(3)}
@@ -65,7 +65,7 @@ export default function HomePage() {
             className="mx-auto max-w-[480px] w-full aspect-square rounded-3xl border border-border"
             decoding="async"
           />
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/mint"
               className="w-full sm:w-auto px-8 py-3 text-base font-medium text-black bg-accent-gold rounded-full focus:ring-2 focus-ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
@@ -82,24 +82,24 @@ export default function HomePage() {
         </section>
 
         {/* Stats strip */}
-        <div className="border-t border-border border-b border-border py-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs text-secondary">
+        <section className="border-t border-border border-b border-border py-12 md:py-16">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-2 text-center text-xs text-secondary">
             {statsRow.map((stat) => (
-              <div key={stat.label} className="border-r border-border last:border-r-0 py-1">
+              <div key={stat.label} className="border-r border-border last:border-r-0 py-2 md:py-1">
                 <div className="text-accent-gold font-medium tabular-nums">{stat.value}</div>
                 <div className="text-secondary">{stat.label}</div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
         {/* Tier gallery */}
-        <section className="space-y-0">
+        <section className="py-12 md:py-16">
           <div className="border border-border divide-y border-border">
             {TIER_DATA.map((tier, idx) => {
               const isExpanded = expandedTier === tier.tier;
               return (
-                <div key={tier.tier} className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:border-accent-gold/50 transition-colors duration-150" onClick={() => setExpandedTier(isExpanded ? null : tier.tier)}>
+                <div key={tier.tier} className="flex items-center gap-4 px-4 py-4 cursor-pointer hover:border-accent-gold/50 transition-colors duration-150" onClick={() => setExpandedTier(isExpanded ? null : tier.tier)}>
                   <img
                     src={getTierImage(tier.tier)}
                     alt={`${tier.name} tier`}
@@ -126,7 +126,7 @@ export default function HomePage() {
             })}
           </div>
           {expandedTier !== null && (
-            <div className="px-4 py-4 border-t border-border border-l border-border border-r border-border bg-surface/30">
+            <div className="px-4 py-6 border-t border-border border-l border-border border-r border-border bg-surface/30">
               <img
                 src={getTierImage(expandedTier)}
                 alt={`${TIER_DATA[expandedTier].name} expanded`}
@@ -141,41 +141,41 @@ export default function HomePage() {
         </section>
 
         {/* Market preview */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
+        <section className="py-12 md:py-16">
+          <div className="flex items-center justify-between mb-8">
             <h2 className="text-lg font-semibold text-primary">Market Preview</h2>
             <Link href="/market" className="text-sm text-accent-gold hover:text-primary transition-colors">
               View all listings →
             </Link>
           </div>
           {loading ? (
-            <div className="border border-border rounded-2xl p-8 text-center">
+            <div className="border border-border rounded-2xl p-12 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-accent-gold border-t-transparent mx-auto mb-4" />
               <p className="text-secondary mb-4">Loading market data…</p>
             </div>
           ) : (
             <>
               {previewListings.length === 0 ? (
-                <div className="border border-border rounded-2xl p-8 text-center">
+                <div className="border border-border rounded-2xl p-12 text-center">
                   <svg className="w-12 h-12 mx-auto text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                   <p className="text-secondary mb-4">No listings yet — be the first to list</p>
                   <Link
                     href="/mint"
-                    className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
+                    className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus-ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
                   >
                     Go to Mint
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {previewListings.map((l: any) => {
                     const tier = l.tokenId % 5000 < 3000 ? 0 : l.tokenId % 5000 < 4250 ? 1 : l.tokenId % 5000 < 4850 ? 2 : l.tokenId % 5000 < 4950 ? 3 : 4;
                     const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
                     return (
-                      <div key={l.tokenId} className="bg-surface/30 border border-border rounded-xl p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                      <div key={l.tokenId} className="bg-surface/30 border border-border rounded-xl p-6 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
                           <img src={getTierImage(tier)} alt={tierName} className="w-12 h-12 rounded-lg border border-border object-cover" />
                           <div>
                             <div className="text-sm font-medium">Aegis Crown #{l.tokenId}</div>
@@ -194,7 +194,7 @@ export default function HomePage() {
                 </div>
               )}
               {lastUpdated && (
-                <p className="mt-4 text-[10px] text-secondary text-center">
+                <p className="mt-8 text-[10px] text-secondary text-center">
                   Live · Updated {formatLastUpdated(lastUpdated)}
                 </p>
               )}

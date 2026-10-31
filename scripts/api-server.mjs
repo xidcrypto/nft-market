@@ -118,10 +118,9 @@ async function handleStats() {
       volume24hBnb: weiToBnb(volume24hWei),
       ownersCount,
       lastSaleAt,
-      cached: fromCache,
     };
   });
-  return data;
+  return { ...data, cached: fromCache };
 }
 
 async function handleMintsList(limit, offset, tier) {

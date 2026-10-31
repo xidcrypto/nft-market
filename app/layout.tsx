@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "./components/header-component";
-import { TabNavigation } from "./components/tab-navigation";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -42,8 +41,6 @@ export const metadata: Metadata = {
     title: "Aegis Crown (AEGIS) — NFT Collection on BNB Chain",
     description: "Aegis Crown (AEGIS) NFT collection on BNB Chain. Free mint for Binance Agent ID holders. Trade on the Aegis Market.",
     images: ["https://i.postimg.cc/90ChCd4G/tier-legendary.webp"],
-    creator: "@AegisCrown",
-    site: "@AegisCrown",
   },
   robots: {
     index: true,
@@ -58,6 +55,15 @@ export const metadata: Metadata = {
     canonical: "https://aegis-crown.vercel.app",
   },
   category: "technology",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32 48x48", type: "image/x-icon" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
@@ -69,7 +75,6 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-background text-primary antialiased">
         <Header />
-        <TabNavigation />
         {children}
       </body>
     </html>

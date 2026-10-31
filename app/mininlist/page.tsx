@@ -114,7 +114,7 @@ export default function MininlistPage() {
       if (!listing) return;
       const priceWei = ethers.parseUnits(listing.price, 18);
       const marketContract = new ethers.Contract(
-        CONFIG.aegisMarketAddress,
+        CONFIG.marketV2,
         ["function buy(uint256 tokenId) external payable"],
         wallet.signer
       );

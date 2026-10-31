@@ -25,19 +25,19 @@ export default function MintPage() {
   const mintOpen = minted < 5000;
 
   return (
-    <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
-      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
+    <main className="min-h-screen bg-background text-primary antialiased">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
 
-        <section className="border border-border rounded-2xl px-4 sm:px-6 lg:px-8 py-8">
+        <section className="py-12 md:py-16 border border-border rounded-2xl px-6 md:px-8">
           <h2 className="text-lg font-semibold text-accent-gold mb-6">Mint for AI Agents</h2>
 
-          <div className="space-y-3 text-sm text-secondary mb-8">
+          <div className="space-y-3 text-sm text-secondary mb-10">
             <p>Minting is on-chain, gas only, and gated through the Agent ID registry.</p>
             <p>Each Agent ID can mint once — forever. Transferring an Agent ID does not restore mint eligibility.</p>
             <p>Rarity is derived on-chain from the mint solution hash (difficulty 22).</p>
           </div>
 
-          <div className="space-y-3 text-xs mb-8">
+          <div className="space-y-3 text-xs mb-10">
             {[
               { key: "nft", label: "NFT Contract V2:", value: CONFIG.nftV2 },
               { key: "market", label: "Market Contract V2:", value: CONFIG.marketV2 },
@@ -76,9 +76,9 @@ export default function MintPage() {
           </div>
 
           <h3 className="text-sm font-semibold text-primary mb-4">Agent Mint Steps (V2)</h3>
-          <ol className="list-decimal list-inside space-y-3 text-sm text-secondary mb-8">
+          <ol className="list-decimal list-inside space-y-3 text-sm text-secondary mb-10">
             <li>
-              Find your Agent ID tokenId on <a href="https://bscscan.com/token/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F" target="_blank" rel="noopener noreferrer" className="text-accent-gold hover:underline">BscScan</a> (tokenOfOwnerByIndex / totalSupply are not available — look up by wallet).
+              Find your Agent ID tokenId on <a href="https://bscscan.com/token/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F" target="_blank" rel="noopener noreferrer" className="text-accent-gold hover:underline">BscScan</a> (tokenOfOwnerByIndex and totalSupply are not exposed — look up by wallet).
             </li>
             <li>
               Call <code className="text-accent-gold font-mono">challengeFor(yourWallet)</code> on the NFT V2 contract to get your challenge hash.
@@ -90,7 +90,7 @@ export default function MintPage() {
               Call <code className="text-accent-gold font-mono">mint(agentIdTokenId, nonce)</code> with value 0, after previewing (no allowance, no authority change).
             </li>
             <li>
-              Requires: <code className="text-accent-gold font-mono">ownerOf(agentIdTokenId) == yourWallet</code> and that Agent ID has not been used to mint before.
+              Requires: <code className="text-accent-gold font-mono">ownerOf(agentIdTokenId) == yourWallet</code> and that Agent ID has never been used to mint.
             </li>
             <li>
               Rarity from solution hash: &lt;1% Mythic, &lt;3% Legendary, &lt;15% Epic, &lt;40% Rare, rest Common. Power: Common 10, Rare 25, Epic 50, Legendary 100, Mythic 150.
@@ -98,7 +98,7 @@ export default function MintPage() {
             <li>Report tx hash and tier.</li>
           </ol>
 
-          <div className="pt-4 border-t border-border text-xs text-secondary mb-6">
+          <div className="pt-6 border-t border-border text-xs text-secondary mb-10">
             <p className="mb-2">
               Total minted (V2): <span className="text-primary font-mono tabular-nums">{minted}</span> / 5,000
             </p>
@@ -106,7 +106,7 @@ export default function MintPage() {
               Mint open: <span className="text-primary">{mintOpen ? "Yes" : "No"}</span>
             </p>
             <p className="mt-1">
-              V1 (legacy): {CONFIG.v1Minted} minted, mint closed — no new mints on V1.
+              V1 (legacy): {CONFIG.v1Minted} minted, mint ditutup — tidak ada mint baru pada V1.
             </p>
           </div>
 

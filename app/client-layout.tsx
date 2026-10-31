@@ -9,14 +9,11 @@ export function ClientLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-
   return (
     <>
       <Header />
       <TabNavigation />
-      <main className={`relative z-0 min-h-screen ${!isHome ? "pt-8 md:pt-12" : "pt-0"}`}>
+      <main className="relative z-0 min-h-screen pt-8 md:pt-12">
         {children}
       </main>
     </>

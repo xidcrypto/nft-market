@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getTierImage } from "../lib/tier-utils";
-import { formatAddress } from "../lib/tier-utils";
 
 const TIER_DATA = [
   { tier: 0, name: "Common — Scout", character: "Scout", power: 10, supply: 3000, rarity: 60 },
@@ -48,20 +47,20 @@ function buildSlides(minted: MintedSlide[]): Slide[] {
     });
   });
 
-  // Minted slides (after tier slides)
+  // Minted slides (after tier slides) - NO cloning, no looping
   minted.forEach((m) => {
     const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][m.tier] ?? "Common";
-      slides.push({
-        type: "minted",
-        tokenId: m.tokenId,
-        tier: m.tier,
-        owner: m.owner ?? undefined,
-        priceBnb: m.priceBnb ?? undefined,
-        listed: m.listed,
-        image: getTierImage(m.tier),
-        name: `#${m.tokenId} · ${tierName}`,
-        label: m.listed ? `Listed: ${m.priceBnb ?? "0"} BNB` : "Not listed",
-      });
+    slides.push({
+      type: "minted",
+      tokenId: m.tokenId,
+      tier: m.tier,
+      owner: m.owner ?? undefined,
+      priceBnb: m.priceBnb ?? undefined,
+      listed: m.listed,
+      image: getTierImage(m.tier),
+      name: `#${m.tokenId} · ${tierName}`,
+      label: m.listed ? `Listed: ${m.priceBnb ?? "0"} BNB` : "Not listed",
+    });
   });
 
   return slides;
@@ -92,26 +91,31 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
     return () => document.removeEventListener("visibilitychange", handler);
   }, []);
 
-  // Keyboard navigation
+  // Keyboard navigation (left/right arrow keys, no visual arrows)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-      if (e.key === "ArrowRight") setCurrent((prev) => (prev + 1) % slides.length);
+      if (e.key === "ArrowLeft") setCurrent((prev) => Math.max(prev - 1, 0));
+      if (e.key === "ArrowRight") setCurrent((prev) => Math.min(prev + 1, slides.length - 1));
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [slides.length]);
 
-  // Auto-play
+  // Auto-play: moves forward only, STOPS at last slide
   useEffect(() => {
     if (isHovered || isTabHidden || slides.length <= 1) return;
+    if (current >= slides.length - 1) return; // stop at last slide
+
     const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length);
+      setCurrent((prev) => {
+        if (prev >= slides.length - 1) return prev; // stop at last slide
+        return prev + 1;
+      });
     }, 5000);
     return () => clearInterval(timer);
-  }, [isHovered, isTabHidden, slides.length, reducedMotion]);
+  }, [isHovered, isTabHidden, slides.length, current, reducedMotion]);
 
-  // Touch swipe
+  // Touch swipe - finite, clamp at ends
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
     setTouchEndX(0);
@@ -121,20 +125,25 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
     setTouchEndX(e.changedTouches[0].clientX);
     const diff = touchStartX - touchEndX;
     if (Math.abs(diff) > 50) {
-      if (diff > 0) setCurrent((prev) => (prev + 1) % slides.length);
-      else setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
+      if (diff > 0) {
+        // swipe left -> next slide (clamp at last)
+        setCurrent((prev) => Math.min(prev + 1, slides.length - 1));
+      } else {
+        // swipe right -> prev slide (clamp at first)
+        setCurrent((prev) => Math.max(prev - 1, 0));
+      }
     }
-  }, [touchStartX]);
+  }, [touchStartX, slides.length]);
 
-  const goPrev = () => setCurrent((prev) => (prev - 1 + slides.length) % slides.length);
-  const goNext = () => setCurrent((prev) => (prev + 1) % slides.length);
-  const goTo = (idx: number) => setCurrent(idx);
+  const goTo = (idx: number) => setCurrent(Math.max(0, Math.min(idx, slides.length - 1)));
 
   const slide = slides[current];
+  const isFirst = current === 0;
+  const isLast = current === slides.length - 1;
 
   return (
     <section className="relative w-full">
-      {/* Slider container */}
+      {/* Slider container - NO navigation arrows */}
       <div
         className="relative w-full overflow-hidden rounded-2xl border border-border bg-neutral-800/40"
         onMouseEnter={() => setIsHovered(true)}
@@ -142,7 +151,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Slide track */}
+        {/* Slide track - finite, no cloning */}
         <div
           className={`flex transition-transform duration-500 ease-in-out ${reducedMotion ? "duration-0" : ""}`}
           style={{ transform: `translateX(-${current * 100}%)` }}
@@ -176,7 +185,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                     {s.label}
                   </span>
                 </div>
-                {/* Content panel */}
+                {/* Content panel - padding on all sides, full title visible */}
                 <div className="absolute bottom-0 left-0 right-0 z-20 p-6 md:p-8">
                   <div className="max-w-[600px]">
                     <h3 className="text-2xl md:text-3xl font-bold text-primary mb-2">{s.name}</h3>
@@ -191,7 +200,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                       <div className="flex items-center gap-3 mb-4">
                         <span className="text-xs text-secondary">Token #{s.tokenId}</span>
                         <span className={`text-xs font-medium ${s.listed ? "text-accent-gold" : "text-secondary"}`}>
-                          {s.listed ? `Listed: ${s.priceBnb} BNB` : "Not listed"}
+                          {s.listed ? `Listed: ${s.priceBnb ?? "0"} BNB` : "Not listed"}
                         </span>
                       </div>
                     )}
@@ -225,31 +234,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
           ))}
         </div>
 
-        {/* Navigation arrows */}
-        {slides.length > 1 && (
-          <>
-            <button
-              onClick={goPrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-primary hover:bg-accent-gold hover:text-black transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-gold"
-              aria-label="Previous slide"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={goNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-12 h-12 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-primary hover:bg-accent-gold hover:text-black transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent-gold"
-              aria-label="Next slide"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </>
-        )}
-
-        {/* Dot indicators */}
+        {/* Dot indicators - user-requested navigation only */}
         {slides.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
             {slides.map((_, idx) => (

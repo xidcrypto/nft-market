@@ -14,7 +14,7 @@ export const AEGIS_MARKET_ABI = [
   "function list(uint256 tokenId, uint256 price) external",
   "function buy(uint256 tokenId) external payable",
   "function cancel(uint256 tokenId) external",
-  "function listings(uint256 tokenId) external view returns (address seller, uint256 price)",
+  "function listings(uint256 tokenId) external view returns (address seller, uint256 price, bool active)",
   "function feeRecipient() external view returns (address)",
   "event Listed(uint256 indexed tokenId, address indexed seller, uint256 price)",
   "event Bought(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, uint256 fee)",
@@ -171,6 +171,7 @@ export class MarketContractService {
   private mode: "mock" | "live" = "mock";
   private marketContract: ethers.Contract | null = null;
   private erc721Contract: ethers.Contract | null = null;
+  private provider: ethers.JsonRpcProvider | ethers.BrowserProvider | null = null;
 
   setMode(mode: "mock" | "live") {
     this.mode = mode;
@@ -179,6 +180,8 @@ export class MarketContractService {
   }
 
   async init(signer: ethers.Signer) {
+    const prov = signer.provider;
+    this.provider = (prov instanceof ethers.BrowserProvider ? prov : (prov as ethers.JsonRpcProvider | null)) ?? null;
     this.marketContract = new ethers.Contract(
       CONFIG.aegisMarketAddress,
       AEGIS_MARKET_ABI,
@@ -216,7 +219,44 @@ export class MarketContractService {
       return listings;
     }
     if (!this.marketContract) throw new Error("Market contract not initialized");
-    return [];
+    if (!this.provider) throw new Error("Provider not initialized");
+
+    const provider = this.provider as ethers.JsonRpcProvider | ethers.BrowserProvider;
+    const latestBlock = await provider.getBlockNumber();
+    const listedEvents = await this.marketContract.queryFilter("Listed", 0, latestBlock);
+
+    const latestByToken = new Map<number, { seller: string; price: bigint; blockNumber: number }>();
+    for (const evt of listedEvents) {
+      const tokenId = Number((evt as ethers.EventLog).args.tokenId);
+      const existing = latestByToken.get(tokenId);
+      if (!existing || evt.blockNumber > existing.blockNumber) {
+        const args = (evt as ethers.EventLog).args;
+        latestByToken.set(tokenId, {
+          seller: args.seller,
+          price: args.price,
+          blockNumber: evt.blockNumber,
+        });
+      }
+    }
+
+    const listings: Listing[] = [];
+    for (const [tokenId, info] of latestByToken) {
+      try {
+        const [, price, active] = await this.marketContract.listings(tokenId);
+        if (active) {
+          listings.push({
+            tokenId,
+            seller: info.seller,
+            price: price.toString(),
+            active: true,
+            tier: 0,
+          });
+        }
+      } catch {
+        // skip tokens no longer listed
+      }
+    }
+    return listings;
   }
 
   async list(tokenId: number, price: string): Promise<{ to: string; value: string; gasLimit: string; description: string }> {

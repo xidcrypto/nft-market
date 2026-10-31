@@ -1,7 +1,7 @@
 {
   "name": "Aegis Crown Common — Scout",
   "description": "A simple yet reliable Aegis Crown from the Scout tier. This crown represents the foundation of the Aegis Crown collection. Common trait with Power 10 and no special item.",
-  "image": "REPLACE_WITH_TIER_IMAGE_URL_common.png",
+  "image": "https://i.postimg.cc/0NKxf2Rp/tier-common.webp",
   "attributes": [
     { "trait_type": "Tier", "value": "Common" },
     { "trait_type": "Name", "value": "Scout" },

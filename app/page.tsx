@@ -59,6 +59,7 @@ export default function MintPage() {
             });
             
             await contractService.init(provider);
+            contractService.setMode("live");
             await refreshStatus(addr);
             clearInterval(checkConnection);
             connWindow?.close();
@@ -96,20 +97,19 @@ export default function MintPage() {
 
     const workerCode = `
       self.onmessage = async function(ev) {
-        const { wallet, contractAddress, chainId, targetBits } = ev.data;
-        let nonce = 0;
-        const maxNonce = 10000000;
+        const { challenge, nonceStart, targetBits } = ev.data;
+        let nonce = nonceStart;
+        const maxNonce = nonceStart + 10000000;
         self.postMessage({ type: "progress", progress: 0 });
         
         function mine() {
           for (let i = 0; i < 1000; i++) {
             const data = ethers.solidityPacked(
-              ["address", "address", "uint256", "uint256"],
-              [wallet, contractAddress, chainId, nonce]
+              ["bytes32", "uint256"],
+              [challenge, nonce]
             );
             const hash = ethers.keccak256(data);
             
-            const firstByte = parseInt(hash.slice(2, 4), 16);
             let zeros = 0;
             for (let b = 0; b < 16; b++) {
               const byte = parseInt(hash.slice(2 + b * 2, 4 + b * 2), 16);
@@ -126,7 +126,7 @@ export default function MintPage() {
             }
             
             nonce++;
-            const progress = Math.min(100, Math.floor((nonce / maxNonce) * 100));
+            const progress = Math.min(100, Math.floor(((nonce - nonceStart) / (maxNonce - nonceStart)) * 100));
             self.postMessage({ type: "progress", progress });
           }
           
@@ -179,9 +179,8 @@ export default function MintPage() {
 
     setMining({ isMining: true, progress: 0, nonce: null, status: "starting" });
     worker.postMessage({
-      wallet: wallet.address,
-      contractAddress: CONFIG.aegisCrownAddress,
-      chainId: CONFIG.chainId,
+      challenge: challengeHex,
+      nonceStart: 0,
       targetBits: 16,
     });
   };

@@ -5,11 +5,11 @@ import { ethers } from "ethers";
 // Canonical tier mapping: contract tierOf returns uint8 0-4
 // 0 = common, 1 = rare, 2 = epic, 3 = legendary, 4 = mythic
 export const TIER_IMAGES: Record<number, string> = {
-  0: "/images/common.svg",
-  1: "/images/rare.svg",
-  2: "/images/epic.svg",
-  3: "/images/legendary.svg",
-  4: "/images/mythic.svg",
+  0: "https://i.postimg.cc/0NKxf2Rp/tier-common.webp",
+  1: "https://i.postimg.cc/Jnw8dVMv/tier-rare.webp",
+  2: "https://i.postimg.cc/W3MvBW4r/tier-epic.webp",
+  3: "https://i.postimg.cc/90ChCd4G/tier-legendary.webp",
+  4: "https://i.postimg.cc/vThdB49X/tier-mythic.webp",
 };
 
 export const TIER_COLORS: Record<number, string> = {

@@ -77,7 +77,9 @@ export default function MininlistPage() {
       });
 
       await contractService.init(prov);
+      contractService.setMode("live");
       await marketContractService.init(signer);
+      marketContractService.setMode("live");
       fetchListings();
     } catch (e) {
       console.error("Connect error:", e);
@@ -89,7 +91,9 @@ export default function MininlistPage() {
     setLoading(true);
     try {
       await contractService.init(wallet.provider);
+      contractService.setMode("live");
       await marketContractService.init(wallet.signer!);
+      marketContractService.setMode("live");
       const result = await marketContractService.getListings();
       setListings(result.map((l: any) => ({
         tokenId: l.tokenId,

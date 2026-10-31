@@ -105,7 +105,9 @@ export default function MarketPage() {
       setIsConnected(true);
 
       await contractService.init(prov);
+      contractService.setMode("live");
       await marketContractService.init(signer);
+      marketContractService.setMode("live");
     } catch (e) {
       console.error("Connect error:", e);
     }

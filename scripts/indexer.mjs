@@ -26,8 +26,8 @@ const MARKET_DATA_PATH = path.resolve(__dirname, "../public/market-data.json");
 const CONFIG = {
   chainId: 56,
   rpcUrl: "https://bsc-dataseed.binance.org",
-  aegisCrownAddress: "0x0000000000000000000000000000000000000000",
-  aegisMarketAddress: "0x0000000000000000000000000000000000000000",
+  aegisCrownAddress: "0x61dfF633C8eE31f9811F75809dd9b82152597170",
+  aegisMarketAddress: "0x9A2BC2555Bb7B5254595F1bF9Ab7A5CB6D12828b",
 };
 
 const AEGIS_CROWN_ABI = [

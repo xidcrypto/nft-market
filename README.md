@@ -129,7 +129,7 @@ export const CONFIG = {
   creatorWallet: "0xYOUR_CREATOR_WALLET_ADDRESS",       // Replace with creator wallet
   maxSupply: 5000,
   royaltyPercent: 3,
-  baseUri: "https://your-domain.com/metadata/",
+  baseUri: "ipfs://QmQ4oJiRy2GbXSwi2XAUM2T6BYhnC2eEcKE1Vzjm3kQHCB/",
   // ... other config
 };
 ```

@@ -1,7 +1,7 @@
 {
   "name": "Aegis Crown Mythic — Apex",
   "description": "The rarest Aegis Crown from the Apex tier. This crown represents the pinnacle of the Aegis Crown collection. Mythic trait with Power 150 and a Red Crystal Crown with Tiny Star items.",
-  "image": "REPLACE_WITH_TIER_IMAGE_URL_mythic.png",
+  "image": "https://i.postimg.cc/vThdB49X/tier-mythic.webp",
   "attributes": [
     { "trait_type": "Tier", "value": "Mythic" },
     { "trait_type": "Name", "value": "Apex" },

@@ -13,23 +13,23 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Aegis Crown — NFT on BNB Chain",
+    default: "Aegis Crown (AEGIS) — NFT on BNB Chain",
     template: "%s | Aegis Crown",
   },
-  description: "Aegis Crown NFT collection on BNB Chain. Mint, collect, and trade unique challenge-response crowns across 5 rarity tiers.",
-  keywords: ["NFT", "BNB Chain", "Aegis Crown", "Web3", "Decentralized", "ERC721"],
+  description: "Aegis Crown (AEGIS) NFT collection on BNB Chain. Free mint for Binance Agent ID holders. Trade on the Aegis Market.",
+  keywords: ["NFT", "BNB Chain", "Aegis Crown", "AEGIS", "Web3", "Decentralized", "ERC721"],
   authors: [{ name: "Aegis Crown" }],
   creator: "Aegis Crown",
   publisher: "Aegis Crown",
-  metadataBase: new URL("https://aegis-crown.com"),
+  metadataBase: new URL("https://aegis-crown.vercel.app"),
   openGraph: {
-    title: "Aegis Crown — NFT Collection on BNB Chain",
-    description: "Aegis Crown NFT collection on BNB Chain. Mint, collect, and trade unique challenge-response crowns across 5 rarity tiers.",
-    url: "https://aegis-crown.com",
+    title: "Aegis Crown (AEGIS) — NFT Collection on BNB Chain",
+    description: "Aegis Crown (AEGIS) NFT collection on BNB Chain. Free mint for Binance Agent ID holders. Trade on the Aegis Market.",
+    url: "https://aegis-crown.vercel.app",
     siteName: "Aegis Crown",
     images: [
       {
-        url: "/images/legendary.svg",
+        url: "https://i.postimg.cc/90ChCd4G/tier-legendary.webp",
         width: 1200,
         height: 630,
         alt: "Aegis Crown Legendary NFT",
@@ -40,9 +40,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Aegis Crown — NFT Collection on BNB Chain",
-    description: "Aegis Crown NFT collection on BNB Chain. Mint, collect, and trade unique challenge-response crowns across 5 rarity tiers.",
-    images: ["/images/legendary.svg"],
+    title: "Aegis Crown (AEGIS) — NFT Collection on BNB Chain",
+    description: "Aegis Crown (AEGIS) NFT collection on BNB Chain. Free mint for Binance Agent ID holders. Trade on the Aegis Market.",
+    images: ["https://i.postimg.cc/90ChCd4G/tier-legendary.webp"],
     creator: "@AegisCrown",
     site: "@AegisCrown",
   },
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   alternates: {
-    canonical: "https://aegis-crown.com",
+    canonical: "https://aegis-crown.vercel.app",
   },
   category: "technology",
 };

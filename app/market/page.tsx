@@ -557,7 +557,7 @@ export default function MarketPage() {
                       <tr key={i} className="border-b border-gray-700">
                         <td className="py-2 px-3">{row.type}</td>
                         <td className="py-2 px-3">#{row.tokenId}</td>
-                        <td className="py-2 px-3">{row.type === "sale" ? "—" : getTierNameFromTierNum(parseTierFromToken(row.tokenId) ?? 1)}</td>
+                        <td className="py-2 px-3">{row.type === "sale" ? "—" : getTierNameFromTierNum(parseTierFromToken(row.tokenId) ?? 0)}</td>
                         <td className="py-2 px-3">{row.priceBnb ? row.priceBnb + " BNB" : "—"}</td>
                         <td className="py-2 px-3">{formatAddress(row.buyer)}</td>
                         <td className="py-2 px-3">{formatAddress(row.seller)}</td>

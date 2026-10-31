@@ -20,7 +20,7 @@ export function RarityCardComponent({ tier, title }: RarityCardProps) {
     );
   }
 
-  const rarityPercent = [60, 25, 12, 2, 1][tier - 1];
+  const rarityPercent = [60, 25, 12, 2, 1][tier];
 
   return (
     <div className="group relative bg-gray-800 rounded-lg border border-gray-700 overflow-hidden transition-transform hover:scale-105 hover:border-yellow-500/30">
@@ -34,7 +34,7 @@ export function RarityCardComponent({ tier, title }: RarityCardProps) {
             width={200}
             height={200}
             className="object-contain transition-transform group-hover:scale-110"
-            priority={tier === 4 || tier === 5}
+            priority={tier === 4}
           />
         </div>
       </div>

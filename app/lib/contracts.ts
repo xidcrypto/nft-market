@@ -203,7 +203,14 @@ export class MarketContractService {
           seller: `0x${Math.random().toString(16).slice(2, 42)}`,
           price: ethers.parseUnits((Math.random() * 0.1 + 0.01).toFixed(4), 18).toString(),
           active: true,
-          tier: Math.random() > 0.7 ? 5 : Math.floor(Math.random() * 4) + 1,
+          tier: (() => {
+            const rng = Math.random() * 100;
+            if (rng < 60) return 0;
+            if (rng < 85) return 1;
+            if (rng < 97) return 2;
+            if (rng < 99) return 3;
+            return 4;
+          })(),
         });
       }
       return listings;
@@ -233,11 +240,21 @@ export class MarketContractService {
   }
 
   async buy(tokenId: number, price: string): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
+    if (this.mode === "mock") {
+      return {
+        to: CONFIG.aegisMarketAddress,
+        value: price,
+        gasLimit: "200000",
+        description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB (3% fee to creator is deducted from the price inside the contract, seller receives 97%)`,
+      };
+    }
+    if (!this.marketContract) throw new Error("Market contract not initialized");
     const priceWei = ethers.parseUnits(price, 18);
+    const tx = await this.marketContract.buy(tokenId, { value: priceWei });
     return {
       to: CONFIG.aegisMarketAddress,
       value: price,
-      gasLimit: "200000",
+      gasLimit: tx.gasLimit.toString(),
       description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB (3% fee to creator is deducted from the price inside the contract, seller receives 97%)`,
     };
   }

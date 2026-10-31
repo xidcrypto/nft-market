@@ -17,6 +17,11 @@
 import { ethers } from "ethers";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const MARKET_DATA_PATH = path.resolve(__dirname, "../public/market-data.json");
 
 const CONFIG = {
   chainId: 56,
@@ -30,9 +35,9 @@ const AEGIS_CROWN_ABI = [
 ];
 
 const AEGIS_MARKET_ABI = [
-  "event Listed(address indexed seller, uint256 indexed tokenId, uint256 price)",
-  "event Bought(address indexed buyer, uint256 indexed tokenId, uint256 price)",
-  "event Cancelled(address indexed seller, uint256 indexed tokenId)",
+  "event Listed(uint256 indexed tokenId, address indexed seller, uint256 price)",
+  "event Bought(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, uint256 fee)",
+  "event Cancelled(uint256 indexed tokenId, address indexed seller)",
 ];
 
 async function main() {
@@ -98,10 +103,36 @@ async function main() {
       listedMap.delete(tokenId);
     }
 
+    const blockNumbersForBought = [...new Set(boughtEvents.map(e => e.blockNumber))];
+    const boughtBlockTimestamps = new Map();
+    for (const blockNum of blockNumbersForBought) {
+      const block = await provider.getBlock(blockNum);
+      if (block) boughtBlockTimestamps.set(blockNum, block.timestamp * 1000);
+    }
+
     for (const evt of boughtEvents) {
       const tokenId = evt.args.tokenId.toString();
       boughtSet.add(tokenId);
       listedMap.delete(tokenId);
+
+      const price = evt.args.price;
+      const fee = evt.args.fee;
+      const total = price + fee;
+      totalVolume += total;
+
+      const timestamp = boughtBlockTimestamps.get(evt.blockNumber) || now;
+      if (now - timestamp <= dayMs) volume24h += total;
+      if (now - timestamp <= weekMs) volume7d += total;
+
+      recentSales.push({
+        tokenId: Number(tokenId),
+        price: price.toString(),
+        fee: fee.toString(),
+        buyer: evt.args.buyer,
+        seller: evt.args.seller,
+        timestamp,
+        txHash: evt.transactionHash,
+      });
     }
 
     // Fill timestamps for active listings
@@ -126,30 +157,6 @@ async function main() {
     let volume7d = 0n;
 
     const recentSales = [];
-    const blockNumbersForBought = [...new Set(boughtEvents.map(e => e.blockNumber))];
-    const boughtBlockTimestamps = new Map();
-    for (const blockNum of blockNumbersForBought) {
-      const block = await provider.getBlock(blockNum);
-      if (block) boughtBlockTimestamps.set(blockNum, block.timestamp * 1000);
-    }
-
-    for (const evt of boughtEvents) {
-      const price = evt.args.price;
-      totalVolume += price;
-
-      const timestamp = boughtBlockTimestamps.get(evt.blockNumber) || now;
-      if (now - timestamp <= dayMs) volume24h += price;
-      if (now - timestamp <= weekMs) volume7d += price;
-
-      recentSales.push({
-        tokenId: Number(evt.args.tokenId),
-        price: price.toString(),
-        buyer: evt.args.buyer,
-        seller: "", // would need to track from Listed event
-        timestamp,
-        txHash: evt.transactionHash,
-      });
-    }
 
     // Sort sales newest first
     recentSales.sort((a, b) => b.timestamp - a.timestamp);
@@ -281,7 +288,7 @@ async function main() {
     };
 
     // Write to public/market-data.json
-    const outPath = path.resolve("/root/nft/public/market-data.json");
+    const outPath = MARKET_DATA_PATH;
     fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
     console.log(`✅ Written to ${outPath}`);
     console.log(`📈 Floor: ${output.stats.floorPriceBnb} BNB | Volume: ${output.stats.totalVolumeBnb} BNB | Listed: ${listedCount} | Owners: ${ownersCount} | Minted: ${totalSupplyMinted}/5000`);

@@ -16,13 +16,13 @@ export const CONFIG = {
 } as const;
 
 export type TierName = typeof CONFIG.tierNames[number];
-export type Tier = 1 | 2 | 3 | 4 | 5;
+export type Tier = 0 | 1 | 2 | 3 | 4;
 
 export function getTierName(tier: Tier): TierName {
-  return CONFIG.tierNames[tier - 1];
+  return CONFIG.tierNames[tier];
 }
 
 export function tierFromNumber(tier: number): Tier | null {
-  if (tier >= 1 && tier <= 5) return tier as Tier;
+  if (tier >= 0 && tier <= 4) return tier as Tier;
   return null;
 }

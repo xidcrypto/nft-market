@@ -1,35 +1,19 @@
 "use client";
 
-export function LoadingOverlay({
-  isLoading,
-  label = "Loading...",
-}: {
-  isLoading: boolean;
-  label?: string;
-}) {
-  if (!isLoading) return null;
-
+export function PageLoadingOverlay() {
   return (
-    <div
-      className="relative"
-      aria-busy="true"
-      aria-label={label}
-    >
-      {/* Overlay scoped to content area - semi-transparent, not black */}
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          {/* Gold spinner */}
-          <div className="w-10 h-10 border-4 border-accent-gold border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-secondary">{label}</p>
-        </div>
-      </div>
-      
-      {/* Skeleton placeholder behind overlay */}
-      <div className="space-y-4 opacity-30 pointer-events-none">
-        <div className="h-8 w-full animate-skeleton" />
-        <div className="h-8 w-full animate-skeleton" />
-        <div className="h-8 w-full animate-skeleton" />
-      </div>
+    <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center">
+      <svg
+        className="w-16 h-16 text-accent-gold mb-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+      </svg>
+      <div className="w-10 h-10 border-4 border-accent-gold border-t-transparent rounded-full animate-spin mb-3" />
+      <p className="text-secondary">Loading…</p>
     </div>
   );
 }

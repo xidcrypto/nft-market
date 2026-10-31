@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Header } from "./components/header-component";
+import { ClientLayout } from "./client-layout";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -74,8 +74,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background text-primary antialiased">
-        <Header />
-        {children}
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

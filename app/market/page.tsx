@@ -5,10 +5,9 @@ import { ethers } from "ethers";
 import Image from "next/image";
 import { contractService, marketContractService } from "../lib/contracts";
 import { CONFIG } from "../lib/config";
-import { getTierInfo, formatPriceBnb, formatAddress, getTierImage } from "../lib/tier-utils";
-import { formatTimeAgo } from "../lib/tier-utils";
+import { getTierInfo, formatPriceBnb, formatAddress, getTierImage, getTierBadgeClass } from "../lib/tier-utils";
 
-type ActionPhase = "none" | "list" | "buy" | "cancel" | "confirming-buy" | "confirming-cancel" | "confirming-list";
+type ActionPhase = "none" | "buy" | "confirming-buy";
 
 type Listing = {
   tokenId: number;
@@ -19,7 +18,7 @@ type Listing = {
   active: boolean;
 };
 
-type SortOption = "price-asc" | "price-desc" | "newest" | "rarity";
+type SortOption = "price-asc" | "price-desc";
 
 function parseTierFromToken(tokenId: number): number | null {
   const rand = tokenId % 5000;
@@ -28,17 +27,6 @@ function parseTierFromToken(tokenId: number): number | null {
   if (rand < 4850) return 2;
   if (rand < 4950) return 3;
   return 4;
-}
-
-function getTierNameFromTierNum(tierNum: number): string {
-  const names: Record<number, string> = {
-    0: "Common",
-    1: "Rare",
-    2: "Epic",
-    3: "Legendary",
-    4: "Mythic",
-  };
-  return names[tierNum] ?? "Unknown";
 }
 
 export default function MarketPage() {
@@ -52,16 +40,12 @@ export default function MarketPage() {
   const [loading, setLoading] = useState(true);
   const [idxLoading, setIdxLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null);
   const [actionPhase, setActionPhase] = useState<ActionPhase>("none");
   const [listingPreview, setListingPreview] = useState<{ tokenId: number; price: string } | null>(null);
 
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
-  const [tierFilter, setTierFilter] = useState<string>("all");
   const [searchTokenId, setSearchTokenId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"listings" | "activity">("listings");
 
-  // Load market-data.json on mount
   const loadMarketData = useCallback(async () => {
     setIdxLoading(true);
     try {
@@ -87,7 +71,7 @@ export default function MarketPage() {
     if (typeof window === "undefined") return;
     const { ethereum } = window as any;
     if (!ethereum) {
-      alert("Please open in the Binance App's dApp browser or install Binance Wallet extension.");
+      alert("Please install MetaMask or Binance Wallet extension to buy NFTs.");
       return;
     }
 
@@ -113,13 +97,6 @@ export default function MarketPage() {
     }
   }, []);
 
-  const disconnectWallet = () => {
-    setWalletAddress(null);
-    setProvider(null);
-    setSigner(null);
-    setIsConnected(false);
-  };
-
   useEffect(() => {
     const { ethereum } = window as any;
     if (ethereum) {
@@ -131,7 +108,6 @@ export default function MarketPage() {
     }
   }, [connectWallet]);
 
-  // Live listings fallback
   const fetchLiveListings = useCallback(async () => {
     if (!provider) return;
     setLoading(true);
@@ -165,20 +141,17 @@ export default function MarketPage() {
     }
   }, [isConnected, fetchLiveListings]);
 
-  // --- Derive data ---
   const indexerReady = marketData !== null;
 
   const stats = useMemo(() => {
     if (!marketData?.stats) return null;
     const s = marketData.stats;
     return {
-      floorPrice: s.floorPriceBnb ?? "0",
-      totalVolume: s.totalVolumeBnb ?? "0",
-      volume24h: s.volume24hBnb ?? "0",
-      volume7d: s.volume7dBnb ?? "0",
-      listedCount: s.listedCount ?? 0,
-      listedPercent: s.listedPercent ?? 0,
-      ownersCount: s.ownersCount ?? 0,
+      floorPrice: s.floorPriceBnb ?? "—",
+      totalVolume: s.totalVolumeBnb ?? "—",
+      volume24h: s.volume24hBnb ?? "—",
+      listedCount: s.listedCount ?? "—",
+      ownersCount: s.ownersCount ?? "—",
       totalMinted: s.totalSupplyMinted ?? 0,
       maxSupply: s.maxSupply ?? 5000,
     };
@@ -201,18 +174,6 @@ export default function MarketPage() {
   const sortedListings = useMemo(() => {
     let items = [...sourceListings];
 
-    // Tier filter
-    if (tierFilter !== "all") {
-      const tierNum = parseTierFromToken(0); // placeholder
-      // Filter by tier - we infer from tokenId
-      const tierMapping: Record<string, number> = {
-        common: 0, rare: 1, epic: 2, legendary: 3, mythic: 4,
-      };
-      const targetTier = tierMapping[tierFilter] ?? 0;
-      items = items.filter(l => parseTierFromToken(l.tokenId) === targetTier);
-    }
-
-    // Search filter
     if (searchTokenId) {
       const tid = parseInt(searchTokenId, 10);
       if (!isNaN(tid)) {
@@ -220,55 +181,20 @@ export default function MarketPage() {
       }
     }
 
-    // Sort
     items.sort((a, b) => {
       switch (sortBy) {
         case "price-asc":
           return parseFloat(a.priceBnb) - parseFloat(b.priceBnb);
         case "price-desc":
           return parseFloat(b.priceBnb) - parseFloat(a.priceBnb);
-        case "newest":
-          return (b.timestamp ?? 0) - (a.timestamp ?? 0);
-        case "rarity":
-          const ta = parseTierFromToken(a.tokenId) ?? 0;
-          const tb = parseTierFromToken(b.tokenId) ?? 0;
-          return tb - ta;
         default:
           return 0;
       }
     });
 
     return items;
-  }, [sourceListings, sortBy, tierFilter, searchTokenId]);
+  }, [sourceListings, sortBy, searchTokenId]);
 
-  const recentActivity = useMemo(() => {
-    if (!marketData) return [];
-    const rows = [];
-    for (const s of marketData.recentSales ?? []) {
-      rows.push({
-        type: "sale",
-        tokenId: s.tokenId,
-        priceBnb: s.priceBnb,
-        buyer: s.buyer,
-        seller: s.seller,
-        timeAgo: s.timeAgo ?? "",
-      });
-    }
-    for (const a of marketData.recentActivity ?? []) {
-      rows.push({
-        type: a.type,
-        tokenId: a.tokenId,
-        priceBnb: a.priceBnb,
-        buyer: a.buyer ?? "",
-        seller: a.user ?? (a.seller ?? ""),
-        timeAgo: a.timeAgo ?? "",
-      });
-    }
-    rows.sort((a: any, b: any) => b.timestamp - a.timestamp);
-    return rows.slice(0, 50);
-  }, [marketData]);
-
-  // --- Action handlers ---
   const handleBuy = (tokenId: number) => {
     if (!isConnected) {
       alert("Wallet not connected!");
@@ -298,323 +224,173 @@ export default function MarketPage() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!selectedTokenId) return;
-    setActionPhase("confirming-cancel");
-    try {
-      await marketContractService.cancel(selectedTokenId);
-      await new Promise(r => setTimeout(r, 300));
-      await fetchLiveListings();
-      setActionPhase("none");
-      setSelectedTokenId(null);
-      alert(`Cancelled listing for token #${selectedTokenId}!`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Cancel failed");
-      setActionPhase("none");
-    }
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       <p className="text-xs text-gray-500">
         Collectible only. No promised returns, no yield, no guaranteed value.
       </p>
 
-      {!isConnected ? (
-        <div className="text-center py-16 border border-gray-800 rounded-xl bg-gradient-to-b from-gray-900 to-black">
-          <h1 className="text-3xl font-bold text-yellow-500 mb-4">Aegis Market</h1>
-          <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
-            Trade unique Aegis Crown NFTs on BNB Chain. Connect your Binance Agentic Wallet.
-          </p>
-          <button
-            onClick={connectWallet}
-            className="px-6 py-3 text-white font-medium bg-indigo-600 rounded-lg hover:bg-indigo-500 transition-colors inline-flex items-center gap-2"
-          >
-            Connect Wallet
-          </button>
-          <div className="mt-8 p-6 bg-gray-800 rounded border border-gray-700 max-w-md mx-auto text-left">
-            <h4 className="font-bold text-yellow-400 mb-2">How to Connect</h4>
-            <ol className="list-decimal pl-5 space-y-1 text-sm text-gray-300">
-              <li>Open Binance App → Wallet → dApp Browser</li>
-              <li>Visit this site in the dApp browser</li>
-              <li>Click "Connect Wallet" and approve in the App</li>
-            </ol>
+      {stats ? (
+        <div className="border-t border-b border-neutral-800 px-4 py-3">
+          <div className="grid grid-cols-5 gap-4 text-center text-xs text-gray-400">
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">{stats.floorPrice} BNB</div>
+              <div className="text-gray-500">Floor</div>
+            </div>
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">{stats.totalVolume} BNB</div>
+              <div className="text-gray-500">Total Vol</div>
+            </div>
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">{stats.volume24h} BNB</div>
+              <div className="text-gray-500">24h Vol</div>
+            </div>
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">{stats.listedCount}</div>
+              <div className="text-gray-500">Listed</div>
+            </div>
+            <div>
+              <div className="text-yellow-400 font-medium">{stats.totalMinted}/{stats.maxSupply}</div>
+              <div className="text-gray-500">Minted</div>
+            </div>
           </div>
         </div>
       ) : (
-        <>
-          {/* Stats Bar */}
-          {stats ? (
-            <div className="bg-gray-800/80 rounded-xl border border-gray-700 p-4 mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-yellow-400">Collection Stats</h3>
-                <span className="text-xs text-gray-500">
-                  Data updated: {new Date(marketData.updatedAt).toLocaleString()}
-                  {!indexerReady && <span className="text-red-400"> (stale)</span>}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-400">
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.floorPrice} BNB</div>
-                  <div>Floor</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.totalVolume} BNB</div>
-                  <div>Total Volume</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.volume24h} BNB</div>
-                  <div>24h Volume</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.volume7d} BNB</div>
-                  <div>7d Volume</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.listedCount}</div>
-                  <div>Listed</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.listedPercent.toFixed(2)}%</div>
-                  <div>Listed %</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.ownersCount}</div>
-                  <div>Owners</div>
-                </div>
-                <div>
-                  <div className="font-medium text-yellow-400">{stats.totalMinted}/{stats.maxSupply}</div>
-                  <div>Minted</div>
-                </div>
-              </div>
+        <div className="border-t border-b border-neutral-800 px-4 py-3">
+          <div className="grid grid-cols-5 gap-4 text-center text-xs text-gray-400">
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">—</div>
+              <div className="text-gray-500">Floor</div>
             </div>
-          ) : (
-            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4 mb-6 text-center">
-              <p className="text-gray-400">
-                Indexer not run yet. Showing live data. Run <code className="text-yellow-500">node scripts/indexer.mjs</code> to enable indexed stats.
-              </p>
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">—</div>
+              <div className="text-gray-500">Total Vol</div>
             </div>
-          )}
-
-          {/* Tabs */}
-          <div className="flex gap-4 border-b border-gray-700 mb-4">
-            <button
-              onClick={() => setActiveTab("listings")}
-              className={`pb-2 text-sm ${activeTab === "listings" ? "text-yellow-400 border-b-2 border-yellow-400" : "text-gray-400"}`}
-            >
-              Listings
-            </button>
-            <button
-              onClick={() => setActiveTab("activity")}
-              className={`pb-2 text-sm ${activeTab === "activity" ? "text-yellow-400 border-b-2 border-yellow-400" : "text-gray-400"}`}
-            >
-              Activity
-            </button>
-          </div>
-
-          {/* Sort & Filter */}
-          <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4 mb-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <select
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-gray-700/50 rounded border border-gray-600 px-2 py-1 text-sm text-white"
-              >
-                <option value="price-asc" selected={sortBy === "price-asc"}>Price Low→High</option>
-                <option value="price-desc" selected={sortBy === "price-desc"}>Price High→Low</option>
-                <option value="newest" selected={sortBy === "newest"}>Newest Listing</option>
-                <option value="rarity" selected={sortBy === "rarity"}>Rarity (Mythic First)</option>
-              </select>
-
-              <select
-                onChange={(e) => setTierFilter(e.target.value)}
-                className="bg-gray-700/50 rounded border border-gray-600 px-2 py-1 text-sm text-white"
-              >
-                <option value="all" selected={tierFilter === "all"}>All Tiers</option>
-                <option value="mythic" selected={tierFilter === "mythic"}>Mythic</option>
-                <option value="legendary" selected={tierFilter === "legendary"}>Legendary</option>
-                <option value="epic" selected={tierFilter === "epic"}>Epic</option>
-                <option value="rare" selected={tierFilter === "rare"}>Rare</option>
-                <option value="common" selected={tierFilter === "common"}>Common</option>
-              </select>
-
-              <input
-                type="text"
-                value={searchTokenId}
-                onChange={(e) => setSearchTokenId(e.target.value)}
-                placeholder="Search tokenId..."
-                className="bg-gray-700/50 rounded border border-gray-600 px-2 py-1 text-sm text-white"
-              />
-
-              <button
-                onClick={() => {
-                  if (indexerReady) {
-                    loadMarketData();
-                  } else {
-                    fetchLiveListings();
-                  }
-                }}
-                className="px-3 py-1 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-500 transition-colors"
-              >
-                Refresh
-              </button>
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">—</div>
+              <div className="text-gray-500">24h Vol</div>
             </div>
-          </div>
-
-          {/* Listings Grid */}
-          {activeTab === "listings" && (
-            <div className="space-y-6">
-              {idxLoading || (loading && !indexerReady) ? (
-                <p className="text-gray-500">Loading listings...</p>
-              ) : sortedListings.length === 0 ? (
-                <div className="text-center py-12 bg-gray-800/50 rounded-lg">
-                  <p className="text-gray-400">No current listings</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sortedListings.map(l => {
-                    const tier = parseTierFromToken(l.tokenId) ?? 0;
-                    const tierInfo = getTierInfo(tier);
-                    return (
-                      <div key={l.tokenId} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden transition-transform hover:border-yellow-500">
-                        <div className="relative h-48 bg-gray-700">
-                          <Image
-                            src={getTierImage(tier)}
-                            alt={tierInfo?.name ?? "Aegis Crown"}
-                            width={400}
-                            height={300}
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                        <div className="p-4 flex flex-col flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm text-gray-400">Token #{l.tokenId}</span>
-                            <span className="text-xs font-medium text-yellow-400">
-                              {tierInfo?.name?.split(" —")[0] ?? "Tier " + tier}
-                            </span>
-                          </div>
-                          <div className="mb-2">
-                            <span className="text-xs text-gray-400 block">Seller</span>
-                            <span className="text-xs text-gray-300 truncate w-32">
-                              {formatAddress(l.seller)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm text-gray-300">Price</span>
-                            <span className="text-xl font-medium text-yellow-400">
-                              {l.priceBnb} BNB
-                            </span>
-                          </div>
-                          <div className="flex gap-2">
-                            {actionPhase !== "none" && l.tokenId === selectedTokenId ? (
-                              <>
-                                <button
-                                  onClick={() => setActionPhase("buy")}
-                                  className="flex-1 px-2.5 py-1 text-xs text-white bg-green-600 rounded hover:bg-green-500"
-                                >
-                                  Buy
-                                </button>
-                                <button
-                                  onClick={() => setActionPhase("cancel")}
-                                  className="flex-1 px-2.5 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-500"
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            ) : (
-                              <button
-                                onClick={() => setSelectedTokenId(l.tokenId)}
-                                className="text-xs text-gray-400 hover:text-white"
-                              >
-                                View
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+            <div className="border-r border-neutral-800">
+              <div className="text-yellow-400 font-medium">—</div>
+              <div className="text-gray-500">Listed</div>
             </div>
-          )}
-
-          {/* Activity Tab */}
-          {activeTab === "activity" && (
             <div>
-              <div className="overflow-x-auto text-sm">
-                <table className="min-w-full border border-gray-700 rounded-lg overflow-hidden text-gray-400">
-                  <thead className="bg-gray-800/50">
-                    <tr className="text-left text-xs">
-                      <th className="py-2 px-3">Type</th>
-                      <th className="py-2 px-3">Token</th>
-                      <th className="py-2 px-3">Tier</th>
-                      <th className="py-2 px-3">Price</th>
-                      <th className="py-2 px-3">Buyer</th>
-                      <th className="py-2 px-3">Seller</th>
-                      <th className="py-2 px-3">Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentActivity.map((row, i) => (
-                      <tr key={i} className="border-b border-gray-700">
-                        <td className="py-2 px-3">{row.type}</td>
-                        <td className="py-2 px-3">#{row.tokenId}</td>
-                        <td className="py-2 px-3">{row.type === "sale" ? "—" : getTierNameFromTierNum(parseTierFromToken(row.tokenId) ?? 0)}</td>
-                        <td className="py-2 px-3">{row.priceBnb ? row.priceBnb + " BNB" : "—"}</td>
-                        <td className="py-2 px-3">{formatAddress(row.buyer)}</td>
-                        <td className="py-2 px-3">{formatAddress(row.seller)}</td>
-                        <td className="py-2 px-3">{row.timeAgo}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <div className="text-yellow-400 font-medium">—</div>
+              <div className="text-gray-500">Minted</div>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* Confirm Purchase Preview */}
-          {actionPhase === "buy" && listingPreview && (
-            <div className="bg-gray-800/50 rounded-xl border border-yellow-700/50 p-4">
-              <h3 className="text-sm font-semibold text-yellow-500 mb-3">Confirm Purchase</h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="text-gray-400">Token ID:</span>{" "}
-                  <code className="text-white">#{listingPreview.tokenId}</code>
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <input
+          type="text"
+          value={searchTokenId}
+          onChange={(e) => setSearchTokenId(e.target.value)}
+          placeholder="Search tokenId..."
+          className="flex-1 bg-neutral-800/50 border border-neutral-700 rounded-xl px-4 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+        />
+        <select
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+          value={sortBy}
+          className="bg-neutral-800/50 border border-neutral-700 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+        >
+          <option value="price-asc">Price Low → High</option>
+          <option value="price-desc">Price High → Low</option>
+        </select>
+      </div>
+
+      {idxLoading || (loading && !indexerReady) ? (
+        <p className="text-gray-500">Loading listings...</p>
+      ) : sortedListings.length === 0 ? (
+        <div className="text-center py-12 bg-neutral-800/50 rounded-lg">
+          <p className="text-gray-400">No listings yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {sortedListings.map(l => {
+            const tier = parseTierFromToken(l.tokenId) ?? 0;
+            const tierInfo = getTierInfo(tier);
+            return (
+              <div key={l.tokenId} className="flex items-center gap-4 p-3 bg-neutral-800/50 rounded-xl border border-neutral-700 hover:border-yellow-500/50 transition-colors">
+                <div className="relative w-14 h-14 rounded-xl border border-neutral-700 overflow-hidden flex-shrink-0">
+                  <div className={`absolute inset-0 ring-2 ring-inset ${getTierBadgeClass(tier)} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                  <Image
+                    src={getTierImage(tier)}
+                    alt={tierInfo?.name ?? "Aegis Crown"}
+                    width={56}
+                    height={56}
+                    className="object-cover w-full h-full"
+                  />
                 </div>
-                <div>
-                  <span className="text-gray-400">Price:</span>{" "}
-                  <code className="text-white">{listingPreview.price} BNB</code>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-white truncate">
+                      Aegis Crown #{l.tokenId} — {tierInfo?.name?.split(" —")[0] ?? "Tier " + tier}
+                    </span>
+                    <span className="text-xl font-medium text-yellow-400 whitespace-nowrap">
+                      {l.priceBnb} BNB
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Seller: {formatAddress(l.seller)}
+                  </div>
                 </div>
-                <div>
-                  <span className="text-gray-400">Fee (3%):</span>{" "}
-                  <code className="text-white">{parseFloat(listingPreview.price) * 0.03} BNB</code>
-                </div>
-                <div>
-                  <span className="text-gray-400">Total:</span>{" "}
-                  <code className="text-white">{parseFloat(listingPreview.price) * 1.03} BNB</code>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                  Transaction will be signed in the Binance App.
-                </p>
+                {isConnected ? (
+                  <button
+                    onClick={() => handleBuy(l.tokenId)}
+                    className="px-4 py-2 text-sm font-medium text-black bg-yellow-400 rounded-full hover:bg-yellow-300 transition-colors focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-neutral-950 whitespace-nowrap"
+                  >
+                    Buy
+                  </button>
+                ) : (
+                  <button
+                    onClick={connectWallet}
+                    className="px-4 py-2 text-sm font-medium text-white bg-neutral-700 rounded-full hover:bg-neutral-600 transition-colors focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-neutral-950 whitespace-nowrap"
+                  >
+                    Connect EVM Wallet — for buying only
+                  </button>
+                )}
               </div>
-              <button
-                onClick={handleConfirmBuy}
-                className="mt-4 px-6 py-3 text-sm text-white bg-green-600 rounded hover:bg-green-500 transition-colors"
-              >
-                Confirm & Sign
-              </button>
-            </div>
-          )}
+            );
+          })}
+        </div>
+      )}
 
-          {/* Agent Trading Note */}
-          <div className="mt-8 pt-8 border-t border-gray-700 text-sm text-gray-500">
-            <h3 className="font-bold text-yellow-400 mb-3">Agent Trading Note</h3>
-            <p>
-              Agents trade by calling the Marketplace contract directly from their agent wallet, following the
-              skill.md protocol. Agents do NOT use MetaMask for trading.
+      {actionPhase === "buy" && listingPreview && (
+        <div className="bg-neutral-800/50 rounded-xl border border-yellow-700/50 p-4">
+          <h3 className="text-sm font-semibold text-yellow-500 mb-3">Confirm Purchase</h3>
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="text-gray-400">Token ID:</span>{" "}
+              <code className="text-white">#{listingPreview.tokenId}</code>
+            </div>
+            <div>
+              <span className="text-gray-400">Price:</span>{" "}
+              <code className="text-white">{listingPreview.price} BNB</code>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Buyer pays exactly the listed price. The 3% marketplace fee is deducted from the seller's proceeds on-chain.
+            </p>
+            <p className="text-xs text-gray-400">
+              Transaction will be signed in the connected wallet (MetaMask / Binance Wallet).
             </p>
           </div>
-        </>
+          <button
+            onClick={handleConfirmBuy}
+            className="mt-4 px-6 py-3 text-sm text-black bg-yellow-400 rounded-full hover:bg-yellow-300 transition-colors focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-neutral-950"
+          >
+            Confirm & Sign
+          </button>
+        </div>
+      )}
+
+      {!isConnected && (
+        <div className="mt-8 pt-8 border-t border-neutral-800 text-sm text-gray-500">
+          <p className="text-xs text-gray-500 mb-2">
+            MetaMask / Binance Wallet extension. This is not Binance Agentic Wallet, and connecting does not grant mint access.
+          </p>
+        </div>
       )}
     </div>
   );

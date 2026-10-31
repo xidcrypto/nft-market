@@ -49,8 +49,10 @@ export function Header() {
     setHasMinted(await contractService.hasMinted(address));
     setAgentBalance(await contractService.hasAgentId(address));
     const ch = await contractService.challengeFor(address);
-    setChallenge(ch.slice(0, 10) + "…");
+    setChallenge(ch.slice(0, 10) + "\u2026");
   }, []);
+
+  const isWrongNetwork = chainId !== null && chainId !== CONFIG.chainId;
 
   const disconnectWallet = useCallback(() => {
     setWalletAddress(null);
@@ -74,21 +76,21 @@ export function Header() {
   }, [connectWallet]);
 
   return (
-    <header className="bg-gray-900/80 backdrop-blur-md border-b border-gray-700 sticky top-0 z-20">
+    <header className="bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800 sticky top-0 z-20">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2 text-gray-200 text-sm font-medium hover:text-white transition-colors"
+            className="flex items-center gap-2 text-gray-300 text-sm font-medium hover:text-white transition-colors"
           >
             <svg
-              className="h-5 w-5"
+              className="h-5 w-5 text-yellow-500"
               viewBox="0 0 24 24"
               fill="currentColor"
             >
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
-            Aegis Crown
+            Aegis Crown<br/>AEGIS
           </Link>
           <nav className="hidden md:flex items-center gap-4">
             <Link
@@ -104,34 +106,6 @@ export function Header() {
               Mininlist
             </Link>
           </nav>
-        </div>
-
-        <div className="hidden md:flex items-center gap-6 text-sm text-gray-300">
-          <span>{formatAddress(walletAddress)}</span>
-          <span>Total Minted: {totalMinted} / 5,000</span>
-          <span>{agentBalance > 0 ? "Has Agent ID" : "No Agent ID"}</span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {walletAddress ? (
-            <>
-              <span className="text-xs text-gray-400">Challenge:</span>
-              <span className="text-xs text-gray-300 truncate w-24">{challenge ?? "-"}</span>
-              <button
-                onClick={disconnectWallet}
-                className="px-2 py-1 text-xs text-gray-200 bg-gray-800 rounded hover:bg-gray-700"
-              >
-                Disconnect
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={connectWallet}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded hover:bg-indigo-500 transition-colors"
-            >
-              Connect Wallet
-            </button>
-          )}
         </div>
       </div>
     </header>

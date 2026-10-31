@@ -45,8 +45,10 @@ async function main() {
 
   // Check if contract addresses are configured
   if (
-    CONFIG.aegisCrownAddress === "0x0000000000000000000000000000000000000000" ||
-    CONFIG.aegisMarketAddress === "0x0000000000000000000000000000000000000000"
+    !CONFIG.aegisCrownAddress ||
+    !CONFIG.aegisMarketAddress ||
+    CONFIG.aegisCrownAddress.length === 0 ||
+    CONFIG.aegisMarketAddress.length === 0
   ) {
     console.warn("⚠️  Contract addresses not configured in config.ts or env vars.");
     console.warn("   Writing empty market-data.json with zeros...");
@@ -331,7 +333,7 @@ function writeEmptyOutput() {
     recentSales: [],
     recentActivity: [],
   };
-  const outPath = path.resolve("/root/nft/public/market-data.json");
+  const outPath = MARKET_DATA_PATH;
   fs.writeFileSync(outPath, JSON.stringify(output, null, 2));
   console.log(`✅ Written empty data to ${outPath}`);
 }

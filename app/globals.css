@@ -1,13 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  :root {
-    --color-primary: #d4af37;
-    --color-secondary: #8b0000;
-    --color-accent-gold: #ffd700;
-  }
+@theme {
+  --color-background: #0A0A0B;
+  --color-surface: #141416;
+  --color-border: #232326;
+  --color-primary: #F5F5F4;
+  --color-secondary: #A1A1AA;
+  --color-accent-gold: #C9A227;
 }
 
 * {

@@ -2,8 +2,6 @@ import type { TierInfo } from "./types";
 import { CONFIG } from "./config";
 import { ethers } from "ethers";
 
-// Canonical tier mapping: contract tierOf returns uint8 0-4
-// 0 = common, 1 = rare, 2 = epic, 3 = legendary, 4 = mythic
 export const TIER_IMAGES: Record<number, string> = {
   0: "https://i.postimg.cc/0NKxf2Rp/tier-common.webp",
   1: "https://i.postimg.cc/Jnw8dVMv/tier-rare.webp",
@@ -28,6 +26,14 @@ export const TIER_NAMES: Record<number, string> = {
   4: "Mythic — Apex",
 };
 
+export const TIER_BADGE_COLORS: Record<number, string> = {
+  0: "border-gray-500/50 bg-gray-500/10 text-gray-400",
+  1: "border-green-500/50 bg-green-500/10 text-green-400",
+  2: "border-blue-500/50 bg-blue-500/10 text-blue-400",
+  3: "border-yellow-500/50 bg-yellow-500/10 text-yellow-400",
+  4: "border-red-500/50 bg-red-500/10 text-red-400",
+};
+
 export function getTierInfo(tierNum: number): TierInfo | null {
   if (tierNum < 0 || tierNum > 4) return null;
   return {
@@ -40,13 +46,12 @@ export function getTierInfo(tierNum: number): TierInfo | null {
   };
 }
 
-export function getTierNameFromNumber(tierNum: number): string | null {
-  const info = getTierInfo(tierNum);
-  return info ? info.name : null;
-}
-
 export function getTierImage(tierNum: number): string {
   return TIER_IMAGES[tierNum] || TIER_IMAGES[0];
+}
+
+export function getTierBadgeClass(tierNum: number): string {
+  return TIER_BADGE_COLORS[tierNum] || TIER_BADGE_COLORS[0];
 }
 
 export function formatAddress(addr: string | null | undefined): string {

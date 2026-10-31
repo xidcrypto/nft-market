@@ -13,7 +13,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Aegis Crown (AEGIS) — NFT on BNB Chain",
+    default: "Aegis Crown (AEGIS)",
     template: "%s | Aegis Crown",
   },
   description: "Aegis Crown (AEGIS) NFT collection on BNB Chain. Free mint for Binance Agent ID holders. Trade on the Aegis Market.",

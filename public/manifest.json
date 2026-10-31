@@ -1,7 +1,7 @@
 {
-  "name": "Aegis Crown",
+  "name": "Aegis Crown (AEGIS)",
   "short_name": "Aegis Crown",
-  "description": "Aegis Crown NFT collection on BNB Chain",
+  "description": "Aegis Crown (AEGIS) NFT collection on BNB Chain. Free mint for Binance Agent ID holders.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a1a2e",
@@ -9,9 +9,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/images/legendary.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "https://i.postimg.cc/90ChCd4G/tier-legendary.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://i.postimg.cc/90ChCd4G/tier-legendary.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
       "purpose": "any maskable"
     }
   ],
@@ -22,14 +28,14 @@
       "short_name": "Mint",
       "description": "Mint your Aegis Crown NFT",
       "url": "/",
-      "icons": [{ "src": "/images/legendary.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "https://i.postimg.cc/90ChCd4G/tier-legendary.webp", "sizes": "192x192" }]
     },
     {
       "name": "Market",
       "short_name": "Market",
       "description": "Trade Aegis Crown NFTs",
       "url": "/market",
-      "icons": [{ "src": "/images/legendary.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "https://i.postimg.cc/90ChCd4G/tier-legendary.webp", "sizes": "192x192" }]
     }
   ]
 }

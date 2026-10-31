@@ -47,7 +47,7 @@ function buildSlides(minted: MintedSlide[]): Slide[] {
     });
   });
 
-  // Minted slides (after tier slides) - NO cloning, no looping
+  // Minted slides (after tier slides) - NO cloning here; cloning done in component
   minted.forEach((m) => {
     const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][m.tier] ?? "Common";
     slides.push({
@@ -67,14 +67,26 @@ function buildSlides(minted: MintedSlide[]): Slide[] {
 }
 
 export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
-  const slides = buildSlides(minted);
-  const [current, setCurrent] = useState(0);
+  const baseSlides = buildSlides(minted);
+  const realCount = baseSlides.length;
+
+  // Build infinite track: [cloneOfLast, ...baseSlides, cloneOfFirst]
+  // Positions: 0 = clone of last, 1..realCount = real slides, realCount+1 = clone of first
+  const slides: Slide[] =
+    realCount > 1
+      ? [baseSlides[realCount - 1], ...baseSlides, baseSlides[0]]
+      : baseSlides;
+
+  // `current` is position in extended track (0..slides.length-1).
+  // Start at position 1 (real first slide) when looping.
+  const [current, setCurrent] = useState(realCount > 1 ? 1 : 0);
   const [isHovered, setIsHovered] = useState(false);
   const [isTabHidden, setIsTabHidden] = useState(false);
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchEndX, setTouchEndX] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [backToStartClicked, setBackToStartClicked] = useState(false);
+  // Suppress transition animation when jumping between clones
+  const [noTransition, setNoTransition] = useState(false);
 
   // Detect reduced motion
   useEffect(() => {
@@ -95,29 +107,62 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
   // Keyboard navigation (left/right arrow keys, no visual arrows)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") setCurrent((prev) => Math.max(prev - 1, 0));
-      if (e.key === "ArrowRight") setCurrent((prev) => Math.min(prev + 1, slides.length - 1));
+      if (realCount <= 1) return;
+      if (e.key === "ArrowLeft") {
+        const next = current - 1;
+        if (next === 0) {
+          // At first real slide (pos 1), going left loops to last real slide (pos realCount)
+          setNoTransition(true);
+          setCurrent(0); // clone of last slide
+          setTimeout(() => {
+            setNoTransition(false);
+            setCurrent(realCount); // real last slide
+          }, 50);
+        } else {
+          setCurrent(next);
+        }
+      }
+      if (e.key === "ArrowRight") {
+        const next = current + 1;
+        if (next > realCount) {
+          // At last real slide (pos realCount), going right loops to first real slide (pos 1)
+          setNoTransition(true);
+          setCurrent(realCount + 1); // clone of first slide
+          setTimeout(() => {
+            setNoTransition(false);
+            setCurrent(1); // real first slide
+          }, 50);
+        } else {
+          setCurrent(next);
+        }
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [slides.length]);
+  }, [current, realCount]);
 
-  // Auto-play: moves forward only, STOPS at last slide
-  // Interval: 9 seconds, transition: 900ms
+  // Auto-play: infinite loop, 9s interval, stops on hover/touch/tab hidden
   useEffect(() => {
-    if (isHovered || isTabHidden || slides.length <= 1 || backToStartClicked) return;
-    if (current >= slides.length - 1) return; // stop at last slide
+    if (isHovered || isTabHidden || realCount <= 1) return;
 
     const timer = setInterval(() => {
-      setCurrent((prev) => {
-        if (prev >= slides.length - 1) return prev; // stop at last slide
-        return prev + 1;
-      });
+      const next = current + 1;
+      if (next > realCount) {
+        // At last real slide, loop to first real slide without animation
+        setNoTransition(true);
+        setCurrent(realCount + 1); // clone of first slide
+        setTimeout(() => {
+          setNoTransition(false);
+          setCurrent(1); // real first slide
+        }, 50);
+      } else {
+        setCurrent(next);
+      }
     }, 9000);
     return () => clearInterval(timer);
-  }, [isHovered, isTabHidden, slides.length, current, backToStartClicked, reducedMotion]);
+  }, [isHovered, isTabHidden, realCount, current]);
 
-  // Touch swipe - finite, clamp at ends
+  // Touch swipe - seamless loop both directions
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
     setTouchEndX(0);
@@ -128,31 +173,58 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
     const diff = touchStartX - touchEndX;
     if (Math.abs(diff) > 50) {
       if (diff > 0) {
-        // swipe left -> next slide (clamp at last)
-        setCurrent((prev) => Math.min(prev + 1, slides.length - 1));
+        // swipe left -> next slide
+        const next = current + 1;
+        if (next > realCount) {
+          setNoTransition(true);
+          setCurrent(realCount + 1); // clone of first slide
+          setTimeout(() => {
+            setNoTransition(false);
+            setCurrent(1); // real first slide
+          }, 50);
+        } else {
+          setCurrent(next);
+        }
       } else {
-        // swipe right -> prev slide (clamp at first)
-        setCurrent((prev) => Math.max(prev - 1, 0));
+        // swipe right -> prev slide
+        const next = current - 1;
+        if (realCount > 1 && next === 0) {
+          setNoTransition(true);
+          setCurrent(0); // clone of last slide
+          setTimeout(() => {
+            setNoTransition(false);
+            setCurrent(realCount); // real last slide
+          }, 50);
+        } else {
+          setCurrent(next);
+        }
       }
     }
-  }, [touchStartX, slides.length]);
+  }, [touchStartX, current, realCount]);
 
-  // Go to first slide with 900ms transition (smooth, not instant)
-  const goToFirst = useCallback(() => {
-    setBackToStartClicked(true);
-    setCurrent(0);
-    // Resume auto-play after 10 seconds
-    const timer = setTimeout(() => {
-      setBackToStartClicked(false);
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, []);
+  // After transition ends, if we landed on a clone, jump to real counterpart without animation
+  useEffect(() => {
+    if (noTransition) return;
+    if (realCount <= 1) return;
+    if (current === 0) {
+      // Landed on first clone (last slide clone) — jump to real last slide
+      setNoTransition(true);
+      setTimeout(() => {
+        setNoTransition(false);
+        setCurrent(realCount);
+      }, 50);
+    } else if (current === realCount + 1) {
+      // Landed on last clone (first slide clone) — jump to real first slide
+      setNoTransition(true);
+      setTimeout(() => {
+        setNoTransition(false);
+        setCurrent(1);
+      }, 50);
+    }
+  }, [current, realCount, noTransition]);
 
-  const goTo = (idx: number) => setCurrent(Math.max(0, Math.min(idx, slides.length - 1)));
-
-  const slide = slides[current];
-  const isFirst = current === 0;
-  const isLast = current === slides.length - 1;
+  // Real slide index for dots (0..realCount-1), mapping from extended track position
+  const realIndex = realCount > 1 ? ((current - 1 + realCount) % realCount) : 0;
 
   const transitionDuration = reducedMotion ? 0 : 900;
 
@@ -166,9 +238,9 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Slide track - finite, no cloning */}
+        {/* Slide track - seamless loop with cloned ends */}
         <div
-          className={`flex transition-transform duration-[${transitionDuration}ms] ease-in-out ${reducedMotion ? "duration-0" : ""}`}
+          className={`flex transition-transform duration-[${transitionDuration}ms] ease-in-out ${noTransition ? "duration-0" : ""} ${reducedMotion ? "duration-0" : ""}`}
           style={{ transform: `translateX(-${current * 100}%)` }}
         >
           {slides.map((s, idx) => (
@@ -183,7 +255,14 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                   width={800}
                   height={560}
                   className="w-full h-full object-cover object-center"
-                  loading={idx === current || idx === (current + 1) % slides.length ? "eager" : "lazy"}
+                  loading={
+                    idx === current ||
+                    Math.abs(idx - current) === 1 ||
+                    (idx === 0 && current === realCount) ||
+                    (idx === realCount + 1 && current === 1)
+                      ? "eager"
+                      : "lazy"
+                  }
                   decoding="async"
                 />
                 {/* Gradient overlay for text readability */}
@@ -241,17 +320,6 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                       >
                         View Market
                       </Link>
-                      {idx === slides.length - 1 && (
-                        <button
-                          onClick={goToFirst}
-                          className="w-full mt-3 py-4 text-center font-bold text-accent-gold border border-accent-gold/30 rounded-xl hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
-                        >
-                          <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          Back to Start
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -261,15 +329,19 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
         </div>
 
         {/* Dot indicators - user-requested navigation only */}
-        {slides.length > 1 && (
+        {realCount > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2">
-            {slides.map((_, idx) => (
+            {baseSlides.map((_, idx) => (
               <button
                 key={idx}
-                onClick={() => goTo(idx)}
-                className={`w-2.5 h-2.5 rounded-full transition-colors duration-200 focus:outline-none ${current === idx ? "bg-accent-gold" : "bg-white/30 hover:bg-white/50"}`}
+                onClick={() => {
+                  const target = idx + 1;
+                  setNoTransition(false);
+                  setCurrent(target);
+                }}
+                className={`w-2.5 h-2.5 rounded-full transition-colors duration-200 focus:outline-none ${realIndex === idx ? "bg-accent-gold" : "bg-white/30 hover:bg-white/50"}`}
                 aria-label={`Go to slide ${idx + 1}`}
-                aria-current={current === idx ? "true" : undefined}
+                aria-current={realIndex === idx ? "true" : undefined}
               />
             ))}
           </div>

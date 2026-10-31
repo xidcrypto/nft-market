@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { ethers } from "ethers";
 import Image from "next/image";
-import { contractService, marketContractService } from "../lib/contracts";
+import Link from "next/link";
 import { CONFIG } from "../lib/config";
-import { getTierInfo, formatPriceBnb, formatAddress, getTierImage } from "../lib/tier-utils";
+import { getTierImage, formatPriceBnb, formatAddress } from "../lib/tier-utils";
+import { Footer } from "../components/footer-component";
+import { useMarketData, formatLastUpdated } from "../lib/realtime";
 
 type Listing = {
   tokenId: number;
@@ -32,33 +34,13 @@ export default function MarketPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
 
-  const [marketData, setMarketData] = useState<any>(null);
+  const { data: marketData, loading: idxLoading } = useMarketData({ interval: 15000 });
   const [liveListings, setLiveListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [idxLoading, setIdxLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
   const [searchTokenId, setSearchTokenId] = useState<string>("");
-
-  const loadMarketData = useCallback(async () => {
-    setIdxLoading(true);
-    try {
-      const res = await fetch("/market-data.json");
-      if (res.ok) {
-        const data = await res.json();
-        setMarketData(data);
-      }
-    } catch {
-      setMarketData(null);
-    } finally {
-      setIdxLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadMarketData();
-  }, [loadMarketData]);
 
   const connectWallet = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -77,8 +59,6 @@ export default function MarketPage() {
       setWalletAddress(accounts[0]);
       setSigner(s);
       setIsConnected(true);
-      await contractService.init(prov);
-      await marketContractService.init(s);
     } catch (e) {
       console.error("Connect error:", e);
     }
@@ -97,17 +77,37 @@ export default function MarketPage() {
     if (!signer) return;
     setLoading(true);
     try {
-      await marketContractService.init(signer);
-      const result = await marketContractService.getListings();
-      const mapped: Listing[] = result.map((l: any) => ({
-        tokenId: l.tokenId,
-        seller: l.seller,
-        price: l.price?.toString?.() ?? l.price,
-        priceBnb: l.priceBnb ?? formatPriceBnb(l.price?.toString?.() ?? l.price),
-        timestamp: 0,
-        active: true,
-      }));
-      setLiveListings(mapped);
+      const provider = signer.provider as ethers.BrowserProvider;
+      const marketContract = new ethers.Contract(
+        CONFIG.aegisMarketAddress,
+        ["function listings(uint256 tokenId) external view returns (address seller, uint256 price, bool active)"],
+        provider
+      );
+      const contract = new ethers.Contract(
+        CONFIG.aegisCrownAddress,
+        ["function totalMinted() external view returns (uint256)"],
+        provider
+      );
+      const totalMinted = await contract.totalMinted();
+      const listings: Listing[] = [];
+      for (let i = 1; i <= Number(totalMinted); i++) {
+        try {
+          const [seller, price, active] = await marketContract.listings(i);
+          if (active && seller !== ethers.ZeroAddress) {
+            listings.push({
+              tokenId: i,
+              seller,
+              price: price.toString(),
+              priceBnb: formatPriceBnb(price.toString()),
+              timestamp: 0,
+              active: true,
+            });
+          }
+        } catch {
+          /* skip */
+        }
+      }
+      setLiveListings(listings);
     } catch {
       setLiveListings([]);
     } finally {
@@ -127,7 +127,7 @@ export default function MarketPage() {
   const indexerReady = marketData !== null;
 
   const sourceListings: Listing[] = useMemo(() => {
-    if (indexerReady && marketData?.listings) {
+    if (indexerReady && marketData?.listings && marketData.listings.length > 0) {
       return marketData.listings.map((l: any) => ({
         tokenId: l.tokenId,
         seller: l.seller,
@@ -187,9 +187,7 @@ export default function MarketPage() {
       const priceWei = ethers.parseUnits(listing.price, 18);
       const marketContract = new ethers.Contract(
         CONFIG.aegisMarketAddress,
-        [
-          "function buy(uint256 tokenId) external payable",
-        ],
+        ["function buy(uint256 tokenId) external payable"],
         signer
       );
       const tx = await marketContract.buy(buyPreview.tokenId, { value: priceWei });
@@ -213,131 +211,225 @@ export default function MarketPage() {
       listedCount: s.listedCount ?? "—",
       totalMinted: s.totalSupplyMinted ?? 0,
       maxSupply: s.maxSupply ?? 5000,
+      ownersCount: s.ownersCount ?? "—",
     };
   }, [marketData]);
 
   const canBuy = isConnected;
 
+  const recentActivity = marketData?.recentActivity?.slice(0, 50) ?? [];
+
   return (
-    <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
+      <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
-      <p className="text-[10px] text-secondary uppercase tracking-widest text-center leading-none">
-        Collectible only. No promised returns, no yield, no guaranteed value.
-      </p>
-
-      {/* Stats strip */}
-      <div className="border-t border-border border-b border-border py-4">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center text-xs text-secondary">
-          {[
-            { label: "Floor", value: stats?.floorPrice ? `${stats.floorPrice} BNB` : "—" },
-            { label: "Total Vol", value: stats?.totalVolume ? `${stats.totalVolume} BNB` : "—" },
-            { label: "24h Vol", value: stats?.volume24h ? `${stats.volume24h} BNB` : "—" },
-            { label: "Listed", value: stats?.listedCount ?? "—" },
-            { label: "Minted", value: stats ? `${stats.totalMinted}/${stats.maxSupply}` : "—" },
-          ].map((stat) => (
-            <div key={stat.label} className="border-r border-border last:border-r-0 py-1">
-              <div className="text-accent-gold font-medium tabular-nums">{stat.value}</div>
-              <div className="text-secondary">{stat.label}</div>
+        {/* Stats strip - mobile 4 in 2x2, desktop 7 in row */}
+        <div className="border-t border-border border-b border-border py-4">
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-center text-xs text-secondary">
+            <div className="border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">Floor</div>
+              <div className="text-accent-gold font-medium tabular-nums">{stats?.floorPrice ? `${stats.floorPrice} BNB` : "—"}</div>
             </div>
-          ))}
+            <div className="border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">Listed</div>
+              <div className="text-accent-gold font-medium tabular-nums">{stats?.listedCount ?? "—"}</div>
+            </div>
+            <div className="border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">Minted</div>
+              <div className="text-accent-gold font-medium tabular-nums">{stats ? `${stats.totalMinted}/${stats.maxSupply}` : "—"}</div>
+            </div>
+            <div className="border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">Owners</div>
+              <div className="text-accent-gold font-medium tabular-nums">{stats?.ownersCount ?? "—"}</div>
+            </div>
+            <div className="hidden md:block border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">Total Vol</div>
+              <div className="text-accent-gold font-medium tabular-nums">{stats?.totalVolume ? `${stats.totalVolume} BNB` : "—"}</div>
+            </div>
+            <div className="hidden md:block border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">24h Vol</div>
+              <div className="text-accent-gold font-medium tabular-nums">{stats?.volume24h ? `${stats.volume24h} BNB` : "—"}</div>
+            </div>
+            <div className="hidden md:block border-r border-border last:border-r-0 py-1">
+              <div className="text-secondary text-[10px]">Last Sale</div>
+              <div className="text-accent-gold font-medium tabular-nums">{marketData?.recentSales?.[0]?.priceBnb ? `${marketData.recentSales[0].priceBnb} BNB` : "—"}</div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Search + Sort */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <input
-          type="text"
-          value={searchTokenId}
-          onChange={(e) => setSearchTokenId(e.target.value)}
-          placeholder="Search tokenId…"
-          className="flex-1 bg-neutral-800/30 border border-neutral-700 rounded-lg px-4 py-2.5 text-sm text-primary placeholder-secondary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
-        />
-        <select
-          onChange={(e) => setSortBy(e.target.value as SortOption)}
-          value={sortBy}
-          className="bg-neutral-800/30 border border-neutral-700 rounded-lg px-4 py-2.5 text-sm text-primary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
-        >
-          <option value="price-asc">Price Low → High</option>
-          <option value="price-desc">Price High → Low</option>
-        </select>
-      </div>
-
-      {idxLoading || (loading && !indexerReady) ? (
-        <p className="text-secondary text-center py-12">Loading listings…</p>
-      ) : sortedListings.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-secondary">No listings yet.</p>
+        {/* Search + Sort */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <input
+            type="text"
+            value={searchTokenId}
+            onChange={(e) => setSearchTokenId(e.target.value)}
+            placeholder="Search tokenId…"
+            className="flex-1 bg-surface/30 border border-border rounded-lg px-4 py-2.5 text-sm text-primary placeholder-secondary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
+          />
+          <select
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            value={sortBy}
+            className="bg-surface/30 border border-border rounded-lg px-4 py-2.5 text-sm text-primary focus:ring-2 focus:ring-accent-gold focus:border-transparent outline-none transition-colors duration-150"
+          >
+            <option value="price-asc">Price Low → High</option>
+            <option value="price-desc">Price High → Low</option>
+          </select>
         </div>
-      ) : (
+
+        {/* Listings - visible by default, no overlay */}
         <div className="space-y-2">
-          {sortedListings.map((l) => {
-            const tier = parseTierFromToken(l.tokenId);
-            const tierInfo = getTierInfo(tier);
-            const tierName = tierInfo?.name?.split(" —")[0] ?? `Tier ${tier}`;
-            return (
-              <div
-                key={l.tokenId}
-                className="bg-neutral-800/30 border border-border rounded-xl p-4 sm:flex sm:items-center sm:gap-4"
+          {loading && !indexerReady ? (
+            <div className="text-center py-12 text-secondary">Loading listings…</div>
+          ) : sortedListings.length === 0 ? (
+            <div className="border border-border rounded-2xl p-8 text-center">
+              <svg className="w-12 h-12 mx-auto text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              <p className="text-secondary mb-4">No listings yet — be the first to list</p>
+              <Link
+                href="/mint"
+                className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-                  <div className="relative w-14 h-14 sm:w-14 sm:h-14 rounded-xl border border-border overflow-hidden shrink-0">
-                    <Image
-                      src={getTierImage(tier)}
-                      alt={tierName}
-                      width={56}
-                      height={56}
-                      className="object-cover w-full h-full"
-                      decoding="async"
-                      priority={l.tokenId === sortedListings[0]?.tokenId}
-                    />
+                Go to Mint
+              </Link>
+            </div>
+          ) : (
+            sortedListings.map((l) => {
+              const tier = parseTierFromToken(l.tokenId);
+              const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
+              return (
+                <div
+                  key={l.tokenId}
+                  className="bg-surface/30 border border-border rounded-xl p-4 sm:flex sm:items-center sm:gap-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+                    <div className="relative w-14 h-14 sm:w-14 sm:h-14 rounded-xl border border-border overflow-hidden shrink-0">
+                      <Image
+                        src={getTierImage(tier)}
+                        alt={tierName}
+                        width={56}
+                        height={56}
+                        className="object-cover w-full h-full"
+                        decoding="async"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 sm:text-left text-center sm:text-left">
+                      <div className="flex items-baseline justify-between sm:justify-start gap-2 mb-1">
+                        <span className="text-sm font-medium truncate">Aegis Crown #{l.tokenId}</span>
+                        <span className="text-[10px] text-secondary">{tierName}</span>
+                      </div>
+                      <div className="text-xs text-secondary">
+                        Seller: <span className="break-all font-mono">{formatAddress(l.seller)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0 sm:text-left text-center sm:text-left">
-                    <div className="flex items-baseline justify-between sm:justify-start gap-2 mb-1">
-                      <span className="text-sm font-medium truncate">Aegis Crown #{l.tokenId}</span>
-                      <span className="text-[10px] text-secondary">{tierName}</span>
-                    </div>
-                    <div className="text-xs text-secondary">
-                      Seller: <span className="break-all font-mono">{formatAddress(l.seller)}</span>
-                    </div>
+
+                  <div className="mt-4 sm:mt-0 sm:w-auto flex sm:flex-col items-center sm:items-end gap-3 sm:gap-0 w-full sm:w-auto">
+                    <span className="text-lg font-medium text-accent-gold tabular-nums whitespace-nowrap">{l.priceBnb} BNB</span>
+                    {!canBuy ? (
+                      <button
+                        onClick={connectWallet}
+                        className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
+                      >
+                        Connect EVM Wallet — for buying only
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleBuy(l.tokenId)}
+                        disabled={confirming}
+                        className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-primary bg-neutral-700 hover:bg-neutral-600 rounded-lg focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150 disabled:opacity-50"
+                      >
+                        {confirming && buyPreview?.tokenId === l.tokenId ? "Signing…" : "Buy"}
+                      </button>
+                    )}
                   </div>
                 </div>
+              );
+            })
+          )}
+        </div>
 
-                <div className="mt-4 sm:mt-0 sm:w-auto flex sm:flex-col items-center sm:items-end gap-3 sm:gap-0 w-full sm:w-auto">
-                  <span className="text-lg font-medium text-accent-gold tabular-nums whitespace-nowrap">{l.priceBnb} BNB</span>
-                  {!canBuy ? (
-                    <button
-                      onClick={connectWallet}
-                      className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
-                    >
-                      Connect EVM Wallet — for buying only
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleBuy(l.tokenId)}
-                      disabled={confirming}
-                      className="w-full sm:w-auto px-6 py-2.5 text-sm font-medium text-primary bg-neutral-700 hover:bg-neutral-600 rounded-lg focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150 disabled:opacity-50"
-                    >
-                      {confirming && buyPreview?.tokenId === l.tokenId ? "Signing…" : "Buy"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        {/* Recent Activity */}
+        <section className="pt-8 border-t border-border">
+          <h2 className="text-lg font-semibold text-primary mb-4">Recent Activity</h2>
+          {recentActivity.length === 0 ? (
+            <p className="text-secondary text-sm">No activity yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentActivity.map((a: any, idx: number) => {
+                const tier = parseTierFromToken(a.tokenId);
+                const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
+                return (
+                  <div key={`${a.type}-${a.tokenId}-${idx}`} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+                    <div className="flex items-center gap-3">
+                      <img src={getTierImage(tier)} alt={tierName} className="w-10 h-10 rounded-lg border border-border object-cover" />
+                      <div>
+                        <div className="text-sm font-medium">
+                          <span className={a.type === "bought" ? "text-accent-gold" : "text-secondary"}>
+                            {a.type === "bought" ? "Sold" : a.type === "listed" ? "Listed" : "Cancelled"}
+                          </span>{" "}
+                          Aegis Crown #{a.tokenId}
+                        </div>
+                        <div className="text-xs text-secondary">
+                          {a.buyer ? `${formatAddress(a.buyer)} ← ${formatAddress(a.seller)}` : formatAddress(a.seller)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {a.priceBnb && <div className="text-accent-gold font-medium tabular-nums">{a.priceBnb} BNB</div>}
+                      <div className="text-[10px] text-secondary">{a.timeAgo}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {!canBuy && !error && (
+          <div className="pt-8 border-t border-border text-[10px] text-secondary">
+            MetaMask / Binance Wallet extension. This is not Binance Agentic Wallet, and connecting does not grant mint access.
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 p-3 text-xs text-secondary bg-surface/30 rounded-lg border border-border">
+            {error}
+          </div>
+        )}
+
+        <Footer />
+      </div>
+
+      {/* Buy confirmation modal */}
+      {buyPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="bg-surface border border-border rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-primary mb-4">Confirm Purchase</h3>
+            <p className="text-sm text-secondary mb-2">
+              Aegis Crown #{buyPreview.tokenId}
+            </p>
+            <p className="text-lg text-accent-gold font-medium mb-6">
+              {buyPreview.price} BNB
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setBuyPreview(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-secondary bg-neutral-700 hover:bg-neutral-600 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmBuy}
+                disabled={confirming}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-black bg-accent-gold hover:bg-yellow-500 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {confirming ? "Confirming…" : "Confirm"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      {!canBuy && !error && (
-        <div className="mt-8 pt-8 border-t border-border text-[10px] text-secondary">
-          MetaMask / Binance Wallet extension. This is not Binance Agentic Wallet, and connecting does not grant mint access.
-        </div>
-      )}
-
-      {error && (
-        <div className="mt-4 p-3 text-xs text-secondary bg-neutral-800/30 rounded-lg border border-border">
-          {error}
-        </div>
-      )}
-    </div>
+    </main>
   );
 }

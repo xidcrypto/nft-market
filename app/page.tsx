@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { getTierImage } from "./lib/tier-utils";
-import { CONFIG } from "./lib/config";
+import { Footer } from "./components/footer-component";
+import { useMarketData, formatLastUpdated } from "./lib/realtime";
 
 const TIER_DATA = [
   { tier: 0, name: "Common — Scout", power: 10, supply: 3000, share: 60 },
@@ -22,23 +23,13 @@ const TIER_DESC = [
 ];
 
 export default function HomePage() {
-  const [marketData, setMarketData] = useState<any>(null);
   const [expandedTier, setExpandedTier] = useState<number | null>(null);
-  const [mintedCount, setMintedCount] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetch("/market-data.json")
-      .then((res) => res.json())
-      .then((data) => {
-        setMarketData(data);
-        setMintedCount(data?.stats?.totalSupplyMinted ?? null);
-      })
-      .catch(() => {});
-  }, []);
+  const { data: marketData, lastUpdated } = useMarketData({ interval: 15000 });
+  const mintedCount = marketData?.stats?.totalSupplyMinted ?? 0;
 
   const stats = marketData?.stats;
   const minted = mintedCount ?? 0;
-  const mintOpen = minted < 5000;
 
   const statsRow = [
     { label: "Floor", value: stats?.floorPriceBnb ? `${stats.floorPriceBnb} BNB` : "—" },
@@ -48,18 +39,44 @@ export default function HomePage() {
     { label: "Minted", value: `${minted} / 5,000` },
   ];
 
-  const scrollToMint = () => {
-    const el = document.getElementById("mint-section");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-  };
+  const previewListings = marketData?.listings?.slice(0, 5) ?? [];
 
   return (
-    <main className="min-h-screen bg-background text-primary antialiased">
+    <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
       <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12 md:space-y-20">
 
-        <p className="text-[10px] text-secondary uppercase tracking-widest text-center leading-none">
-          Collectible only. No promised returns, no yield, no guaranteed value.
-        </p>
+        {/* Hero */}
+        <section className="text-center max-w-[720px] mx-auto">
+          <p className="text-[10px] text-secondary uppercase tracking-widest mb-4">
+            BNB Chain · Free Mint for Agent ID Holders
+          </p>
+          <h1 className="text-accent-gold font-semibold tracking-tighter mb-4" style={{ fontSize: "clamp(32px, 6vw, 56px)", lineHeight: "1.05" }}>
+            Aegis Crown
+          </h1>
+          <p className="text-secondary leading-relaxed mb-8 max-w-full mx-auto">
+            A 5,000-piece collectible for Binance Agent ID holders. One per wallet. Gas only.
+          </p>
+          <img
+            src={getTierImage(3)}
+            alt="Aegis Crown Legendary NFT"
+            className="mx-auto max-w-[480px] w-full aspect-square rounded-3xl border border-border"
+            decoding="async"
+          />
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/mint"
+              className="w-full sm:w-auto px-8 py-3 text-base font-medium text-black bg-accent-gold rounded-full focus:ring-2 focus-ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
+            >
+              Mint for AI Agents
+            </Link>
+            <Link
+              href="/market"
+              className="text-sm text-secondary hover:text-primary transition-colors"
+            >
+              Browse the Market →
+            </Link>
+          </div>
+        </section>
 
         {/* Stats strip */}
         <div className="border-t border-border border-b border-border py-4">
@@ -72,39 +89,6 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-
-        {/* Hero */}
-        <section className="text-center max-w-[720px] mx-auto">
-          <p className="text-[10px] text-secondary uppercase tracking-widest mb-4">
-            BNB Chain · Free Mint for Agent ID Holders
-          </p>
-          <h1 className="text-accent-gold font-semibold tracking-tighter mb-4" style={{ fontSize: "clamp(32px, 6vw, 56px)", lineHeight: "1.05" }}>
-            Aegis Crown
-          </h1>
-          <p className="text-secondary leading-relaxed mb-8 max-w-full mx-auto">
-            A 5,000-piece collectible for Binance AI Agent ID holders. One per wallet. Gas only.
-          </p>
-          <img
-            src={getTierImage(3)}
-            alt="Aegis Crown Legendary NFT"
-            className="mx-auto max-w-[480px] w-full aspect-square rounded-3xl border border-border"
-            decoding="async"
-          />
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              onClick={scrollToMint}
-              className="w-full sm:w-auto px-8 py-3 text-base font-medium text-black bg-accent-gold rounded-full focus:ring-2 focus-ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
-            >
-              Mint for AI Agents
-            </button>
-            <Link
-              href="/market"
-              className="text-sm text-secondary hover:text-primary transition-colors"
-            >
-              Browse the Market →
-            </Link>
-          </div>
-        </section>
 
         {/* Tier gallery */}
         <section className="space-y-0">
@@ -139,7 +123,7 @@ export default function HomePage() {
             })}
           </div>
           {expandedTier !== null && (
-            <div className="px-4 py-4 border-t border-border border-l border-border border-r border-border bg-neutral-800/30">
+            <div className="px-4 py-4 border-t border-border border-l border-border border-r border-border bg-surface/30">
               <img
                 src={getTierImage(expandedTier)}
                 alt={`${TIER_DATA[expandedTier].name} expanded`}
@@ -153,94 +137,69 @@ export default function HomePage() {
           )}
         </section>
 
-        {/* Mint section */}
-        <section id="mint-section" className="border border-border rounded-2xl px-4 sm:px-6 lg:px-8 py-8">
-          <h3 className="text-sm font-semibold text-accent-gold mb-6">Mint for AI Agents</h3>
-
-          <div className="space-y-4 text-sm text-secondary mb-8">
-            <p>Minting is on-chain, gas only, and limited to one per wallet for Agent ID holders.</p>
-            <p>Mint access is gated through the Agent ID registry contract.</p>
-            <p>Rarity is derived on-chain from the mint solution hash.</p>
+        {/* Market preview */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-primary">Market Preview</h2>
+            <Link href="/market" className="text-sm text-accent-gold hover:text-primary transition-colors">
+              View all listings →
+            </Link>
           </div>
-
-          <div className="space-y-3 text-xs mb-8">
-            <div className="flex gap-2">
-              <span className="text-secondary shrink-0">Contract:</span>
-              <div className="flex-1 bg-neutral-800/30 border border-border rounded-lg p-2 break-all font-mono text-accent-gold">
-                {CONFIG.aegisCrownAddress}
-                <button className="ml-2 p-1 text-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-accent-gold rounded" title="Copy address">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                </button>
-              </div>
+          {marketData === null ? (
+            <div className="border border-border rounded-2xl p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-accent-gold border-t-transparent mx-auto mb-4" />
+              <p className="text-secondary mb-4">Loading market data…</p>
             </div>
-            <div className="flex gap-2">
-              <span className="text-secondary shrink-0">Market:</span>
-              <div className="flex-1 bg-neutral-800/30 border border-border rounded-lg p-2 break-all font-mono text-accent-gold">
-                {CONFIG.aegisMarketAddress}
-                <button className="ml-2 p-1 text-secondary hover:text-primary focus:outline-none focus:ring-2 focus:ring-accent-gold rounded" title="Copy address">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                </button>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-secondary shrink-0">Registry:</span>
-              <div className="flex-1 bg-neutral-800/30 border border-border rounded-lg p-2 break-all font-mono text-accent-gold">
-                {CONFIG.registryAddress}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-secondary shrink-0">Chain ID:</span>
-              <span className="text-primary font-mono">56 (BNB Smart Chain)</span>
-            </div>
-          </div>
-
-          <ol className="list-decimal list-inside space-y-3 text-sm text-secondary mb-8">
-            <li>Call <code className="text-accent-gold font-mono">challengeFor(yourWallet)</code> to get your challenge hash.</li>
-            <li>Find a nonce where <code className="text-accent-gold font-mono">keccak256(challenge, nonce)</code> has at least 16 leading zero bits.</li>
-            <li>Call <code className="text-accent-gold font-mono">mint(nonce)</code> with value 0, after previewing.</li>
-            <li>Rarity derived on-chain: 0=Common/Scout, 1=Rare/Validator, 2=Epic/Sentinel, 3=Legendary/Genesis, 4=Mythic/Apex.</li>
-          </ol>
-
-          <div className="pt-4 border-t border-border text-xs text-secondary">
-            Total minted: <span className="text-primary font-mono tabular-nums">{minted}</span> / 5,000 &nbsp;•&nbsp; Mint open: <span className="text-primary">{mintOpen ? "Yes" : "No"}</span>
-          </div>
-
-          <p className="text-[10px] text-secondary mt-4">
-            Collectible only. No promised returns, no yield, no guaranteed value.
-          </p>
+          ) : (
+            <>
+              {previewListings.length === 0 ? (
+                <div className="border border-border rounded-2xl p-8 text-center">
+                  <svg className="w-12 h-12 mx-auto text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  <p className="text-secondary mb-4">No listings yet — be the first to list</p>
+                  <Link
+                    href="/mint"
+                    className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
+                  >
+                    Go to Mint
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {previewListings.map((l: any) => {
+                    const tier = l.tokenId % 5000 < 3000 ? 0 : l.tokenId % 5000 < 4250 ? 1 : l.tokenId % 5000 < 4850 ? 2 : l.tokenId % 5000 < 4950 ? 3 : 4;
+                    const tierName = ["Common", "Rare", "Epic", "Legendary", "Mythic"][tier];
+                    return (
+                      <div key={l.tokenId} className="bg-surface/30 border border-border rounded-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <img src={getTierImage(tier)} alt={tierName} className="w-12 h-12 rounded-lg border border-border object-cover" />
+                          <div>
+                            <div className="text-sm font-medium">Aegis Crown #{l.tokenId}</div>
+                            <div className="text-xs text-secondary">{tierName}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-accent-gold font-medium tabular-nums">{l.priceBnb} BNB</div>
+                          <Link href="/market" className="text-xs text-secondary hover:text-primary">
+                            View on Market →
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {lastUpdated && (
+                <p className="mt-4 text-[10px] text-secondary text-center">
+                  Live · Updated {formatLastUpdated(lastUpdated)}
+                </p>
+              )}
+            </>
+          )}
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-border pt-8 text-center text-[10px] text-secondary">
-          <p className="mb-4">
-            Aegis Crown (AEGIS) · BNB Chain · Collectible only. No promised returns, no yield, no guaranteed value.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-6">
-            <Link
-              href="https://bscscan.com/address/0x61dfF633C8eE31f9811F75809dd9b82152597170"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              AegisCrown contract
-            </Link>
-            <Link
-              href="https://bscscan.com/address/0x9A2BC2555Bb7B5254595F1bF9Ab7A5CB6D12828b"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              AegisMarket contract
-            </Link>
-            <Link
-              href="/AGENTS.md"
-              className="hover:text-primary transition-colors"
-            >
-              For AI agents: read AGENTS.md
-            </Link>
-          </div>
-        </footer>
-
+        <Footer />
       </div>
     </main>
   );

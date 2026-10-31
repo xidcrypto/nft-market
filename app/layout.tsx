@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Header } from "./components/header-component";
+import { TabNavigation } from "./components/tab-navigation";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -65,9 +66,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body className="bg-neutral-950 text-gray-200 antialiased">
+    <html lang="en">
+      <body className="bg-background text-primary antialiased">
         <Header />
+        <TabNavigation />
         {children}
       </body>
     </html>

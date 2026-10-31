@@ -74,6 +74,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchEndX, setTouchEndX] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [backToStartClicked, setBackToStartClicked] = useState(false);
 
   // Detect reduced motion
   useEffect(() => {
@@ -102,8 +103,9 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
   }, [slides.length]);
 
   // Auto-play: moves forward only, STOPS at last slide
+  // Interval: 9 seconds, transition: 900ms
   useEffect(() => {
-    if (isHovered || isTabHidden || slides.length <= 1) return;
+    if (isHovered || isTabHidden || slides.length <= 1 || backToStartClicked) return;
     if (current >= slides.length - 1) return; // stop at last slide
 
     const timer = setInterval(() => {
@@ -111,9 +113,9 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
         if (prev >= slides.length - 1) return prev; // stop at last slide
         return prev + 1;
       });
-    }, 5000);
+    }, 9000);
     return () => clearInterval(timer);
-  }, [isHovered, isTabHidden, slides.length, current, reducedMotion]);
+  }, [isHovered, isTabHidden, slides.length, current, backToStartClicked, reducedMotion]);
 
   // Touch swipe - finite, clamp at ends
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -135,11 +137,24 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
     }
   }, [touchStartX, slides.length]);
 
+  // Go to first slide with 900ms transition (smooth, not instant)
+  const goToFirst = useCallback(() => {
+    setBackToStartClicked(true);
+    setCurrent(0);
+    // Resume auto-play after 10 seconds
+    const timer = setTimeout(() => {
+      setBackToStartClicked(false);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const goTo = (idx: number) => setCurrent(Math.max(0, Math.min(idx, slides.length - 1)));
 
   const slide = slides[current];
   const isFirst = current === 0;
   const isLast = current === slides.length - 1;
+
+  const transitionDuration = reducedMotion ? 0 : 900;
 
   return (
     <section className="relative w-full">
@@ -153,7 +168,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
       >
         {/* Slide track - finite, no cloning */}
         <div
-          className={`flex transition-transform duration-500 ease-in-out ${reducedMotion ? "duration-0" : ""}`}
+          className={`flex transition-transform duration-[${transitionDuration}ms] ease-in-out ${reducedMotion ? "duration-0" : ""}`}
           style={{ transform: `translateX(-${current * 100}%)` }}
         >
           {slides.map((s, idx) => (
@@ -226,6 +241,17 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                       >
                         View Market
                       </Link>
+                      {isLast && (
+                        <button
+                          onClick={goToFirst}
+                          className="w-full mt-3 py-4 text-center font-bold text-accent-gold border border-accent-gold/30 rounded-xl hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
+                        >
+                          <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Back to Start
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

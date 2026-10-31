@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CONFIG } from "../lib/config";
 import { Footer } from "../components/footer-component";
 import { useMintedCount } from "../lib/realtime";
+import { LoadingOverlay } from "../components/loading-overlay";
 
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text).catch(() => {});
@@ -12,7 +13,6 @@ const copyToClipboard = (text: string) => {
 
 export default function MintPage() {
   const [copied, setCopied] = useState<string | null>(null);
-
   const { data: mintedCount, loading: marketLoading } = useMintedCount({ interval: 10000 });
 
   const handleCopy = useCallback((key: string, text: string) => {
@@ -27,8 +27,7 @@ export default function MintPage() {
   return (
     <main className="min-h-screen bg-background text-primary antialiased">
       <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
-
-        <section className="py-12 md:py-16 border border-border rounded-2xl px-6 md:px-8">
+        <section className="py-12 md:py-16 border border-border rounded-2xl px-6 md:px-8 animate-content-fade-in">
           <h2 className="text-lg font-semibold text-accent-gold mb-6">Mint for AI Agents</h2>
 
           <div className="space-y-3 text-sm text-secondary mb-10">
@@ -39,8 +38,8 @@ export default function MintPage() {
 
           <div className="space-y-3 text-xs mb-10">
             {[
-              { key: "nft", label: "NFT Contract V2:", value: CONFIG.nftV2 },
-              { key: "market", label: "Market Contract V2:", value: CONFIG.marketV2 },
+              { key: "nft", label: "NFT Contract:", value: CONFIG.nftV2 },
+              { key: "market", label: "Market Contract:", value: CONFIG.marketV2 },
               { key: "registry", label: "Agent ID Registry:", value: CONFIG.registryAddress },
             ].map((field) => (
               <div key={field.key} className="flex gap-2">
@@ -66,22 +65,18 @@ export default function MintPage() {
               </div>
             ))}
             <div className="flex gap-2">
-              <span className="text-secondary shrink-0">V1 Legacy NFT:</span>
-              <span className="text-primary font-mono text-[10px]">{CONFIG.aegisCrownAddress}</span>
-            </div>
-            <div className="flex gap-2">
               <span className="text-secondary shrink-0">Chain ID:</span>
               <span className="text-primary font-mono">56 (BNB Smart Chain)</span>
             </div>
           </div>
 
-          <h3 className="text-sm font-semibold text-primary mb-4">Agent Mint Steps (V2)</h3>
+          <h3 className="text-sm font-semibold text-primary mb-4">Agent Mint Steps</h3>
           <ol className="list-decimal list-inside space-y-3 text-sm text-secondary mb-10">
             <li>
               Find your Agent ID tokenId on <a href="https://bscscan.com/token/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F" target="_blank" rel="noopener noreferrer" className="text-accent-gold hover:underline">BscScan</a> (tokenOfOwnerByIndex and totalSupply are not exposed — look up by wallet).
             </li>
             <li>
-              Call <code className="text-accent-gold font-mono">challengeFor(yourWallet)</code> on the NFT V2 contract to get your challenge hash.
+              Call <code className="text-accent-gold font-mono">challengeFor(yourWallet)</code> on the NFT contract to get your challenge hash.
             </li>
             <li>
               Find a nonce where <code className="text-accent-gold font-mono">keccak256(challenge, nonce)</code> has at least <span className="font-mono">22 leading zero bits</span> (difficulty 22, ~4.2M hashes, ~10-30s on CPU).
@@ -100,13 +95,10 @@ export default function MintPage() {
 
           <div className="pt-6 border-t border-border text-xs text-secondary mb-10">
             <p className="mb-2">
-              Total minted (V2): <span className="text-primary font-mono tabular-nums">{minted}</span> / 5,000
+              Total minted: <span className="text-primary font-mono tabular-nums">{minted}</span> / 5,000
             </p>
             <p>
               Mint open: <span className="text-primary">{mintOpen ? "Yes" : "No"}</span>
-            </p>
-            <p className="mt-1">
-              V1 (legacy): {CONFIG.v1Minted} minted, mint ditutup — tidak ada mint baru pada V1.
             </p>
           </div>
 

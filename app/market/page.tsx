@@ -7,6 +7,7 @@ import Link from "next/link";
 import { CONFIG } from "../lib/config";
 import { getTierImage, formatPriceBnb, formatAddress } from "../lib/tier-utils";
 import { Footer } from "../components/footer-component";
+import { LoadingOverlay } from "../components/loading-overlay";
 import {
   useMarketStats,
   useMarketListings,
@@ -143,13 +144,19 @@ export default function MarketPage() {
   const s = marketData;
   const canBuy = isConnected;
   const recentActivity = sales.data ?? [];
+  const loading = stats.loading || listings.loading;
 
   return (
     <main className="min-h-screen bg-background text-primary antialiased">
       <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Loading overlay scoped to content area */}
+        <LoadingOverlay
+          isLoading={loading && marketData === null}
+          label="Loading listings…"
+        />
 
         {/* Stats strip */}
-        <section className="border-t border-border border-b border-border py-8 md:py-12">
+        <section className="border-t border-border border-b border-border py-8 md:py-12 animate-content-fade-in">
           <div className="grid grid-cols-2 md:grid-cols-7 gap-4 md:gap-2 text-center text-xs text-secondary">
             <div className="border-r border-border last:border-r-0 py-2 md:py-1">
               <div className="text-secondary text-[10px]">Floor</div>
@@ -197,7 +204,7 @@ export default function MarketPage() {
         </section>
 
         {/* Search + Sort */}
-        <section className="py-6">
+        <section className="py-6 animate-content-fade-in-delay-1">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
             <input
               type="text"
@@ -218,9 +225,12 @@ export default function MarketPage() {
         </section>
 
         {/* Listings */}
-        <section className="py-6">
-          {stats.loading || listings.loading ? (
-            <div className="text-center py-16 text-secondary">Loading listings…</div>
+        <section className="py-6 animate-content-fade-in-delay-2">
+          {loading && marketData === null ? (
+            <div className="text-center py-16 text-secondary">
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-accent-gold border-t-transparent mx-auto mb-4" />
+              <p className="text-secondary">Loading listings…</p>
+            </div>
           ) : sortedListings.length === 0 ? (
             <div className="border border-border rounded-2xl p-12 md:p-16 text-center">
               <svg className="w-12 h-12 mx-auto text-secondary mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +239,7 @@ export default function MarketPage() {
               <p className="text-secondary mb-4">No listings yet — be the first to list</p>
               <Link
                 href="/mint"
-                className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus-ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
+                className="inline-block px-6 py-2.5 text-sm font-medium text-black bg-accent-gold rounded-lg focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors"
               >
                 Go to Mint
               </Link>
@@ -290,7 +300,7 @@ export default function MarketPage() {
         </section>
 
         {/* Recent Activity */}
-        <section className="pt-12 border-t border-border pb-12">
+        <section className="pt-12 border-t border-border pb-12 animate-content-fade-in-delay-3">
           <h2 className="text-lg font-semibold text-primary mb-6">Recent Activity</h2>
           {recentActivity.length === 0 ? (
             <p className="text-secondary text-sm">No activity yet.</p>

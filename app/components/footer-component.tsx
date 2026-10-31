@@ -15,7 +15,7 @@ export function Footer() {
             rel="noopener noreferrer"
             className="text-secondary hover:text-primary transition-colors"
           >
-            NFT V2 on BscScan
+            NFT Contract on BscScan
           </Link>
           <Link
             href={`https://bscscan.com/address/${CONFIG.marketV2}`}
@@ -23,7 +23,7 @@ export function Footer() {
             rel="noopener noreferrer"
             className="text-secondary hover:text-primary transition-colors"
           >
-            Market V2 on BscScan
+            Market Contract on BscScan
           </Link>
           <Link
             href="/AGENTS.md"
@@ -32,9 +32,6 @@ export function Footer() {
             For AI agents: read AGENTS.md
           </Link>
         </div>
-        <p className="text-center text-[10px] text-secondary mt-6">
-          V1 (legacy): 25 minted, mint ditutup · V1 dan V2 adalah koleksi terpisah, tidak ada migrasi.
-        </p>
       </div>
     </footer>
   );

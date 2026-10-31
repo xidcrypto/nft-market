@@ -2,18 +2,18 @@ Aegis Crown (AEGIS) — Collectible only. No promised returns, no yield, no guar
 
 ## Contracts (BNB Chain, chainId 56)
 
-- NFT V2 (active): 0x60A5C775328c06145038E2fC7e0349d85A19212f
-- Market V2 (active): 0xA2b7fD4Ffc43088D75f28d59c1250005B15A26a6
+- Current NFT contract: 0x60A5C775328c06145038E2fC7e0349d85A19212f
+- Current Market contract: 0xA2b7fD4Ffc43088D75f28d59c1250005B15A26a6
 - Agent ID registry: 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F
-- NFT V1 (legacy, closed): 0x61dfF633C8eE31f9811F75809dd9b82152597170 — 25 minted, mint disabled
-- Market V1 (legacy, closed): 0x9A2BC2555Bb7B5254595F1bF9Ab7A5CB6D12828b
+- Previous NFT contract (mint closed): 0x61dfF633C8eE31f9811F75809dd9b82152597170 — 25 minted
+- Previous Market contract (mint closed): 0x9A2BC2555Bb7B5254595F1bF9Ab7A5CB6D12828b
 - RPC: https://bsc-dataseed.binance.org
 - MAX_SUPPLY: 5000
 - Sell fee: 3% (deducted from seller proceeds inside the Market contract)
 
-## Copy-paste mint prompt (V2)
+## Copy-paste mint prompt
 
-You are minting Aegis Crown V2 on BNB Chain (chainId 56). Use your own Binance Agentic Wallet address — never ask for or use a private key or seed phrase.
+You are minting Aegis Crown on BNB Chain (chainId 56). Use your own Binance Agentic Wallet address — never ask for or use a private key or seed phrase.
 
 1) Find your Agent ID tokenId on BscScan (registry 0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F). tokenOfOwnerByIndex and totalSupply are not exposed — look up by wallet address.
 2) Call challengeFor(yourWallet) on 0x60A5C775328c06145038E2fC7e0349d85A19212f — keccak256(yourWallet, contract, 56).
@@ -30,7 +30,7 @@ Do NOT use a browser Connect Wallet button — Binance Agentic Wallet signs via 
 ## Market rules
 
 - Buy: send value exactly equal to the listed price. The 3% marketplace fee is deducted from the seller's proceeds on-chain; the buyer pays no extra fee on top.
-- List and cancel via the Aegis Market V2 contract at 0xA2b7fD4Ffc43088D75f28d59c1250005B15A26a6.
+- List and cancel via the Aegis Market contract at 0xA2b7fD4Ffc43088D75f28d59c1250005B15A26a6.
 - Browsing requires no wallet. Mint is for AI agents only via contract call.
 
 No IPFS metadata link. No gateway link. No metadata JSON link.

@@ -1,5 +1,5 @@
 /**
- * Aegis Crown V2 API client
+ * Aegis Crown API client
  * Fetches from VPS API (NEXT_PUBLIC_API_URL) with 8s timeout.
  * Falls back to public/market-data.json (build-time static) when API is down.
  * Never shows a blank page.

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { getTierImage } from "./lib/tier-utils";
 import { Footer } from "./components/footer-component";
+import { LoadingOverlay } from "./components/loading-overlay";
 import { useMarketStats, useMarketListings, formatLastUpdated } from "./lib/realtime";
 
 const TIER_DATA = [
@@ -47,9 +48,14 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-background text-primary antialiased">
       <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Loading overlay scoped to content area */}
+        <LoadingOverlay
+          isLoading={loading && marketData === null}
+          label="Loading market data…"
+        />
 
         {/* Hero */}
-        <section className="py-24 md:py-32 text-center">
+        <section className="py-24 md:py-32 text-center animate-content-fade-in">
           <p className="text-[10px] text-secondary uppercase tracking-widest mb-4">
             BNB Chain · Free Mint for Agent ID Holders
           </p>
@@ -82,7 +88,7 @@ export default function HomePage() {
         </section>
 
         {/* Stats strip */}
-        <section className="border-t border-border border-b border-border py-12 md:py-16">
+        <section className="border-t border-border border-b border-border py-12 md:py-16 animate-content-fade-in-delay-1">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-2 text-center text-xs text-secondary">
             {statsRow.map((stat) => (
               <div key={stat.label} className="border-r border-border last:border-r-0 py-2 md:py-1">
@@ -94,7 +100,7 @@ export default function HomePage() {
         </section>
 
         {/* Tier gallery */}
-        <section className="py-12 md:py-16">
+        <section className="py-12 md:py-16 animate-content-fade-in-delay-2">
           <div className="border border-border divide-y border-border">
             {TIER_DATA.map((tier, idx) => {
               const isExpanded = expandedTier === tier.tier;
@@ -141,7 +147,7 @@ export default function HomePage() {
         </section>
 
         {/* Market preview */}
-        <section className="py-12 md:py-16">
+        <section className="py-12 md:py-16 animate-content-fade-in-delay-3">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-lg font-semibold text-primary">Market Preview</h2>
             <Link href="/market" className="text-sm text-accent-gold hover:text-primary transition-colors">

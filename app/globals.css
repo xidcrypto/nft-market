@@ -9,6 +9,78 @@
   --color-accent-gold: #C9A227;
 }
 
+/* Fade-in animation - safe, CSS-only, respects reduced motion */
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skeletonShimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* Content wrapper animation - applies to main content sections */
+.animate-content-fade-in {
+  animation: contentFadeIn 400ms ease-out forwards;
+}
+
+/* Stagger delays for sections */
+.animate-content-fade-in-delay-1 {
+  animation: contentFadeIn 400ms ease-out 80ms forwards;
+  opacity: 0;
+}
+
+.animate-content-fade-in-delay-2 {
+  animation: contentFadeIn 400ms ease-out 160ms forwards;
+  opacity: 0;
+}
+
+.animate-content-fade-in-delay-3 {
+  animation: contentFadeIn 400ms ease-out 240ms forwards;
+  opacity: 0;
+}
+
+/* Skeleton shimmer for loading state */
+.animate-skeleton {
+  background: linear-gradient(
+    90deg,
+    #141416 0%,
+    #1f1f22 50%,
+    #141416 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* Reduced motion - disable animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-content-fade-in,
+  .animate-content-fade-in-delay-1,
+  .animate-content-fade-in-delay-2,
+  .animate-content-fade-in-delay-3 {
+    animation: none;
+    opacity: 1;
+  }
+  
+  .animate-skeleton {
+    animation: none;
+    background: #141416;
+  }
+}
+
+/* Scrollbar styling */
 * {
   scrollbar-width: thin;
   scrollbar-color: #4b5562 #1f2937;

@@ -299,21 +299,12 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                       </div>
                     )}
                     <div className="flex flex-col sm:flex-row gap-3">
-                      {s.type === "tier" ? (
-                        <Link
-                          href="/mint"
-                          className="flex-1 py-4 text-center font-bold text-black bg-accent-gold rounded-xl focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
-                        >
-                          Mint This Tier
-                        </Link>
-                      ) : (
-                        <Link
-                          href="/market"
-                          className="flex-1 py-4 text-center font-bold text-black bg-accent-gold rounded-xl focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
-                        >
-                          View in Market
-                        </Link>
-                      )}
+                      <Link
+                        href="/market"
+                        className="flex-1 py-4 text-center font-bold text-black bg-accent-gold rounded-xl focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"
+                      >
+                        View in Market
+                      </Link>
                       <Link
                         href="/market"
                         className="flex-1 py-4 text-center font-medium text-secondary border border-accent-gold/30 rounded-xl hover:border-accent-gold/60 hover:text-accent-gold transition-colors duration-150"

@@ -90,12 +90,20 @@ export function Header() {
             </svg>
             Aegis Crown
           </Link>
-          <Link
-            href="/market"
-            className="text-gray-400 hover:text-yellow-400 transition-colors"
-          >
-            Market
-          </Link>
+          <nav className="hidden md:flex items-center gap-4">
+            <Link
+              href="/market"
+              className="text-gray-400 hover:text-yellow-400 transition-colors text-sm font-medium"
+            >
+              Market
+            </Link>
+            <Link
+              href="/mininlist"
+              className="text-gray-400 hover:text-yellow-400 transition-colors text-sm font-medium"
+            >
+              Mininlist
+            </Link>
+          </nav>
         </div>
 
         <div className="hidden md:flex items-center gap-6 text-sm text-gray-300">

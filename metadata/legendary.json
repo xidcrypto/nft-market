@@ -1,0 +1,11 @@
+{
+  "name": "Aegis Crown Legendary — Genesis",
+  "description": "A majestic Aegis Crown from the Genesis tier. This crown represents the foundation of the Aegis Crown collection. Legendary trait with Power 100 and a Red Crystal Crown item.",
+  "image": "REPLACE_WITH_TIER_IMAGE_URL_legendary.png",
+  "attributes": [
+    { "trait_type": "Tier", "value": "Legendary" },
+    { "trait_type": "Name", "value": "Genesis" },
+    { "trait_type": "Power", "value": 100 },
+    { "trait_type": "Item", "value": "Red Crystal Crown" }
+  ]
+}

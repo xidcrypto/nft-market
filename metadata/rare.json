@@ -1,0 +1,11 @@
+{
+  "name": "Aegis Crown Rare — Validator",
+  "description": "A reliable Aegis Crown from the Validator tier. This crown represents the foundation of the Aegis Crown collection. Rare trait with Power 25 and a Tiny Gem item.",
+  "image": "REPLACE_WITH_TIER_IMAGE_URL_rare.png",
+  "attributes": [
+    { "trait_type": "Tier", "value": "Rare" },
+    { "trait_type": "Name", "value": "Validator" },
+    { "trait_type": "Power", "value": 25 },
+    { "trait_type": "Item", "value": "Tiny Gem" }
+  ]
+}

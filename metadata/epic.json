@@ -1,0 +1,11 @@
+{
+  "name": "Aegis Crown Epic — Sentinel",
+  "description": "A powerful Aegis Crown from the Sentinel tier. This crown represents the foundation of the Aegis Crown collection. Epic trait with Power 50 and a Tiny Sparkle item.",
+  "image": "REPLACE_WITH_TIER_IMAGE_URL_epic.png",
+  "attributes": [
+    { "trait_type": "Tier", "value": "Epic" },
+    { "trait_type": "Name", "value": "Sentinel" },
+    { "trait_type": "Power", "value": 50 },
+    { "trait_type": "Item", "value": "Tiny Sparkle" }
+  ]
+}

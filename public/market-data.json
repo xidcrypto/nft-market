@@ -1,0 +1,22 @@
+{
+  "updatedAt": "2026-10-31T03:05:09.457Z",
+  "blockNumber": 0,
+  "stats": {
+    "floorPrice": "0",
+    "floorPriceBnb": "0",
+    "totalVolume": "0",
+    "totalVolumeBnb": "0",
+    "volume24h": "0",
+    "volume24hBnb": "0",
+    "volume7d": "0",
+    "volume7dBnb": "0",
+    "listedCount": 0,
+    "listedPercent": 0,
+    "ownersCount": 0,
+    "totalSupplyMinted": 0,
+    "maxSupply": 5000
+  },
+  "listings": [],
+  "recentSales": [],
+  "recentActivity": []
+}

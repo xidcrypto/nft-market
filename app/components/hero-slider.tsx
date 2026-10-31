@@ -241,7 +241,7 @@ export function HeroSlider({ minted }: { minted: MintedSlide[] }) {
                       >
                         View Market
                       </Link>
-                      {isLast && (
+                      {idx === slides.length - 1 && (
                         <button
                           onClick={goToFirst}
                           className="w-full mt-3 py-4 text-center font-bold text-accent-gold border border-accent-gold/30 rounded-xl hover:bg-accent-gold/10 hover:text-accent-gold focus:ring-2 focus:ring-accent-gold focus:ring-offset-2 focus:ring-offset-background transition-colors duration-150"

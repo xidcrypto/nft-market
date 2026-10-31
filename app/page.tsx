@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { getTierImage } from "./lib/tier-utils";
 import { Footer } from "./components/footer-component";
-import { useMarketData, formatLastUpdated } from "./lib/realtime";
+import { useMarketStats, useMarketListings, formatLastUpdated } from "./lib/realtime";
 
 const TIER_DATA = [
   { tier: 0, name: "Common — Scout", power: 10, supply: 3000, share: 60 },
@@ -25,21 +25,24 @@ const TIER_DESC = [
 export default function HomePage() {
   const [expandedTier, setExpandedTier] = useState<number | null>(null);
 
-  const { data: marketData, lastUpdated } = useMarketData({ interval: 15000 });
-  const mintedCount = marketData?.stats?.totalSupplyMinted ?? 0;
+  const stats = useMarketStats({ interval: 15000 });
+  const listings = useMarketListings({ interval: 15000 });
 
-  const stats = marketData?.stats;
-  const minted = mintedCount ?? 0;
+  const marketData = stats.data;
+  const previewListings = listings.data?.slice(0, 5) ?? [];
+  const lastUpdated = stats.lastUpdated;
+
+  const minted = marketData?.totalMinted ?? 0;
 
   const statsRow = [
-    { label: "Floor", value: stats?.floorPriceBnb ? `${stats.floorPriceBnb} BNB` : "—" },
-    { label: "Total Volume", value: stats?.totalVolumeBnb ? `${stats.totalVolumeBnb} BNB` : "—" },
-    { label: "24h Volume", value: stats?.volume24hBnb ? `${stats.volume24hBnb} BNB` : "—" },
-    { label: "Listed", value: stats?.listedCount != null ? String(stats.listedCount) : "—" },
+    { label: "Floor", value: marketData?.floorPriceBnb ? `${marketData.floorPriceBnb} BNB` : "—" },
+    { label: "Total Volume", value: marketData?.totalVolumeBnb ? `${marketData.totalVolumeBnb} BNB` : "—" },
+    { label: "24h Volume", value: marketData?.volume24hBnb ? `${marketData.volume24hBnb} BNB` : "—" },
+    { label: "Listed", value: marketData?.listedCount != null ? String(marketData.listedCount) : "—" },
     { label: "Minted", value: `${minted} / 5,000` },
   ];
 
-  const previewListings = marketData?.listings?.slice(0, 5) ?? [];
+  const loading = stats.loading || listings.loading;
 
   return (
     <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
@@ -145,7 +148,7 @@ export default function HomePage() {
               View all listings →
             </Link>
           </div>
-          {marketData === null ? (
+          {loading ? (
             <div className="border border-border rounded-2xl p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-accent-gold border-t-transparent mx-auto mb-4" />
               <p className="text-secondary mb-4">Loading market data…</p>

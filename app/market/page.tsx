@@ -7,15 +7,19 @@ import Link from "next/link";
 import { CONFIG } from "../lib/config";
 import { getTierImage, formatPriceBnb, formatAddress } from "../lib/tier-utils";
 import { Footer } from "../components/footer-component";
-import { useMarketData, formatLastUpdated } from "../lib/realtime";
+import {
+  useMarketStats,
+  useMarketListings,
+  useRecentSales,
+  formatLastUpdated,
+} from "../lib/realtime";
 
 type Listing = {
   tokenId: number;
   seller: string;
-  price: string;
+  priceWei: string;
   priceBnb: string;
-  timestamp: number;
-  active: boolean;
+  listedAt: string;
 };
 
 type SortOption = "price-asc" | "price-desc";
@@ -34,13 +38,17 @@ export default function MarketPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
 
-  const { data: marketData, loading: idxLoading } = useMarketData({ interval: 15000 });
-  const [liveListings, setLiveListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const stats = useMarketStats({ interval: 15000 });
+  const listings = useMarketListings({ interval: 15000 });
+  const sales = useRecentSales({ interval: 30000 });
+
+  const marketData = stats.data;
+  const liveListings: Listing[] = listings.data ?? [];
+  const lastUpdated = stats.lastUpdated;
 
   const [sortBy, setSortBy] = useState<SortOption>("price-asc");
   const [searchTokenId, setSearchTokenId] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   const connectWallet = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -73,75 +81,8 @@ export default function MarketPage() {
     }
   }, [connectWallet]);
 
-  const fetchLiveListings = useCallback(async () => {
-    if (!signer) return;
-    setLoading(true);
-    try {
-      const provider = signer.provider as ethers.BrowserProvider;
-      const marketContract = new ethers.Contract(
-        CONFIG.aegisMarketAddress,
-        ["function listings(uint256 tokenId) external view returns (address seller, uint256 price, bool active)"],
-        provider
-      );
-      const contract = new ethers.Contract(
-        CONFIG.aegisCrownAddress,
-        ["function totalMinted() external view returns (uint256)"],
-        provider
-      );
-      const totalMinted = await contract.totalMinted();
-      const listings: Listing[] = [];
-      for (let i = 1; i <= Number(totalMinted); i++) {
-        try {
-          const [seller, price, active] = await marketContract.listings(i);
-          if (active && seller !== ethers.ZeroAddress) {
-            listings.push({
-              tokenId: i,
-              seller,
-              price: price.toString(),
-              priceBnb: formatPriceBnb(price.toString()),
-              timestamp: 0,
-              active: true,
-            });
-          }
-        } catch {
-          /* skip */
-        }
-      }
-      setLiveListings(listings);
-    } catch {
-      setLiveListings([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [signer]);
-
-  useEffect(() => {
-    if (!isConnected) {
-      setLiveListings([]);
-      setLoading(false);
-    } else {
-      fetchLiveListings();
-    }
-  }, [isConnected, fetchLiveListings]);
-
-  const indexerReady = marketData !== null;
-
-  const sourceListings: Listing[] = useMemo(() => {
-    if (indexerReady && marketData?.listings && marketData.listings.length > 0) {
-      return marketData.listings.map((l: any) => ({
-        tokenId: l.tokenId,
-        seller: l.seller,
-        price: l.price,
-        priceBnb: l.priceBnb ?? formatPriceBnb(l.price),
-        timestamp: l.timestamp ?? 0,
-        active: true,
-      }));
-    }
-    return liveListings;
-  }, [indexerReady, marketData, liveListings]);
-
   const sortedListings = useMemo(() => {
-    let items = [...sourceListings];
+    let items = [...liveListings];
 
     if (searchTokenId) {
       const tid = parseInt(searchTokenId, 10);
@@ -162,21 +103,13 @@ export default function MarketPage() {
     });
 
     return items;
-  }, [sourceListings, sortBy, searchTokenId]);
+  }, [liveListings, sortBy, searchTokenId]);
 
-  const [buyPreview, setBuyPreview] = useState<{ tokenId: number; price: string } | null>(null);
-  const [confirming, setConfirming] = useState(false);
-
-  const handleBuy = (tokenId: number) => {
-    if (!isConnected) {
-      const listing = sortedListings.find((l) => l.tokenId === tokenId);
-      setBuyPreview(listing ? { tokenId, price: listing.priceBnb } : null);
-      return;
-    }
+  const handleBuy = useCallback((tokenId: number) => {
     const listing = sortedListings.find((l) => l.tokenId === tokenId);
     if (!listing) return;
-    setBuyPreview({ tokenId, price: listing.priceBnb });
-  };
+    setBuyPreview({ tokenId, price: listing.priceBnb, priceWei: listing.priceWei });
+  }, [sortedListings]);
 
   const handleConfirmBuy = async () => {
     if (!buyPreview || !signer) return;
@@ -184,15 +117,14 @@ export default function MarketPage() {
     try {
       const listing = sortedListings.find((l) => l.tokenId === buyPreview.tokenId);
       if (!listing) return;
-      const priceWei = ethers.parseUnits(listing.price, 18);
+      const priceWei = ethers.parseUnits(listing.priceWei, 18);
       const marketContract = new ethers.Contract(
-        CONFIG.aegisMarketAddress,
+        CONFIG.marketV2,
         ["function buy(uint256 tokenId) external payable"],
         signer
       );
       const tx = await marketContract.buy(buyPreview.tokenId, { value: priceWei });
       await tx.wait();
-      await fetchLiveListings();
       setBuyPreview(null);
       setConfirming(false);
     } catch (e) {
@@ -201,23 +133,16 @@ export default function MarketPage() {
     }
   };
 
-  const stats = useMemo(() => {
-    if (!marketData?.stats) return null;
-    const s = marketData.stats;
-    return {
-      floorPrice: s.floorPriceBnb ?? "—",
-      totalVolume: s.totalVolumeBnb ?? "—",
-      volume24h: s.volume24hBnb ?? "—",
-      listedCount: s.listedCount ?? "—",
-      totalMinted: s.totalSupplyMinted ?? 0,
-      maxSupply: s.maxSupply ?? 5000,
-      ownersCount: s.ownersCount ?? "—",
-    };
-  }, [marketData]);
+  const [buyPreview, setBuyPreview] = useState<{
+    tokenId: number;
+    price: string;
+    priceWei: string;
+  } | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
+  const s = marketData;
   const canBuy = isConnected;
-
-  const recentActivity = marketData?.recentActivity?.slice(0, 50) ?? [];
+  const recentActivity = sales.data ?? [];
 
   return (
     <main className="min-h-screen bg-background text-primary antialiased pb-[56px] md:pb-0">
@@ -228,31 +153,45 @@ export default function MarketPage() {
           <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-center text-xs text-secondary">
             <div className="border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">Floor</div>
-              <div className="text-accent-gold font-medium tabular-nums">{stats?.floorPrice ? `${stats.floorPrice} BNB` : "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {s?.floorPriceBnb ? `${s.floorPriceBnb} BNB` : "—"}
+              </div>
             </div>
             <div className="border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">Listed</div>
-              <div className="text-accent-gold font-medium tabular-nums">{stats?.listedCount ?? "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {s?.listedCount ?? "—"}
+              </div>
             </div>
             <div className="border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">Minted</div>
-              <div className="text-accent-gold font-medium tabular-nums">{stats ? `${stats.totalMinted}/${stats.maxSupply}` : "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {s ? `${s.totalMinted}/${s.maxSupply}` : "—"}
+              </div>
             </div>
             <div className="border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">Owners</div>
-              <div className="text-accent-gold font-medium tabular-nums">{stats?.ownersCount ?? "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {s?.ownersCount ?? "—"}
+              </div>
             </div>
             <div className="hidden md:block border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">Total Vol</div>
-              <div className="text-accent-gold font-medium tabular-nums">{stats?.totalVolume ? `${stats.totalVolume} BNB` : "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {s?.totalVolumeBnb ? `${s.totalVolumeBnb} BNB` : "—"}
+              </div>
             </div>
             <div className="hidden md:block border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">24h Vol</div>
-              <div className="text-accent-gold font-medium tabular-nums">{stats?.volume24h ? `${stats.volume24h} BNB` : "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {s?.volume24hBnb ? `${s.volume24hBnb} BNB` : "—"}
+              </div>
             </div>
             <div className="hidden md:block border-r border-border last:border-r-0 py-1">
               <div className="text-secondary text-[10px]">Last Sale</div>
-              <div className="text-accent-gold font-medium tabular-nums">{marketData?.recentSales?.[0]?.priceBnb ? `${marketData.recentSales[0].priceBnb} BNB` : "—"}</div>
+              <div className="text-accent-gold font-medium tabular-nums">
+                {recentActivity[0]?.priceBnb ? `${recentActivity[0].priceBnb} BNB` : "—"}
+              </div>
             </div>
           </div>
         </div>
@@ -278,7 +217,7 @@ export default function MarketPage() {
 
         {/* Listings - visible by default, no overlay */}
         <div className="space-y-2">
-          {loading && !indexerReady ? (
+          {stats.loading || listings.loading ? (
             <div className="text-center py-12 text-secondary">Loading listings…</div>
           ) : sortedListings.length === 0 ? (
             <div className="border border-border rounded-2xl p-8 text-center">
@@ -396,6 +335,12 @@ export default function MarketPage() {
           <div className="mt-4 p-3 text-xs text-secondary bg-surface/30 rounded-lg border border-border">
             {error}
           </div>
+        )}
+
+        {lastUpdated && (
+          <p className="mt-4 text-[10px] text-secondary text-center">
+            Live · Updated {formatLastUpdated(lastUpdated)}
+          </p>
         )}
 
         <Footer />

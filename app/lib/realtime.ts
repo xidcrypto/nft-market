@@ -1,6 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  fetchStats,
+  fetchListings,
+  fetchMints,
+  fetchSales,
+  type ApiStats,
+  type ApiListing,
+  type ApiMint,
+} from "./api";
 
 type RealtimeOptions = {
   interval?: number;
@@ -13,6 +22,7 @@ type RealtimeState<T> = {
   loading: boolean;
   error: Error | null;
   lastUpdated: number | null;
+  source: "api" | "fallback" | null;
 };
 
 export function useRealtime<T>(
@@ -30,6 +40,7 @@ export function useRealtime<T>(
     loading: true,
     error: null,
     lastUpdated: null,
+    source: null,
   });
 
   const visibleRef = useRef(true);
@@ -44,18 +55,15 @@ export function useRealtime<T>(
 
   useEffect(() => {
     if (!pauseOnTabHidden) return;
-
     const handleVisibility = () => {
       visibleRef.current = document.visibilityState === "visible";
     };
-
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [pauseOnTabHidden]);
 
   const fetchData = useCallback(async () => {
     if (!enabled || (pauseOnTabHidden && !visibleRef.current)) return;
-
     try {
       const data = await fetcher();
       if (mountedRef.current) {
@@ -80,9 +88,7 @@ export function useRealtime<T>(
 
   useEffect(() => {
     fetchData();
-
     if (!enabled) return;
-
     const timerId = setInterval(fetchData, interval);
     return () => clearInterval(timerId);
   }, [fetchData, interval]);
@@ -90,13 +96,39 @@ export function useRealtime<T>(
   return state;
 }
 
-export function useMarketData(options: RealtimeOptions = {}) {
-  return useRealtime<any>(
-    async () => {
-      const res = await fetch("/market-data.json");
-      if (!res.ok) throw new Error("Failed to fetch market data");
-      return res.json();
-    },
+export function useMarketStats(options: RealtimeOptions = {}) {
+  return useRealtime<ApiStats>(
+    () =>
+      fetchStats().then((r) => {
+        const d = r.data;
+        if (!d) {
+          return {
+            totalMinted: 0,
+            maxSupply: 5000,
+            listedCount: 0,
+            floorPriceWei: null,
+            floorPriceBnb: "0.0000",
+            totalVolumeWei: "0",
+            totalVolumeBnb: "0.0000",
+            volume24hWei: "0",
+            volume24hBnb: "0.0000",
+            ownersCount: 0,
+            lastSaleAt: null,
+          };
+        }
+        return d;
+      }),
+    { interval: 15000, ...options }
+  );
+}
+
+export function useMarketListings(options: RealtimeOptions = {}) {
+  return useRealtime<ApiListing[]>(
+    () =>
+      fetchListings().then((r) => {
+        const d = r.data;
+        return d ?? [];
+      }),
     { interval: 15000, ...options }
   );
 }
@@ -104,12 +136,18 @@ export function useMarketData(options: RealtimeOptions = {}) {
 export function useMintedCount(options: RealtimeOptions = {}) {
   return useRealtime<number>(
     async () => {
-      const res = await fetch("/market-data.json");
-      if (!res.ok) throw new Error("Failed to fetch minted count");
-      const data = await res.json();
-      return data?.stats?.totalSupplyMinted ?? 0;
+      const r = await fetchStats();
+      const d = r.data;
+      return d ? d.totalMinted : 0;
     },
     { interval: 10000, ...options }
+  );
+}
+
+export function useRecentSales(options: RealtimeOptions = {}) {
+  return useRealtime<any[]>(
+    () => fetchSales(50),
+    { interval: 30000, ...options }
   );
 }
 

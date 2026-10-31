@@ -2,11 +2,11 @@ import { ethers } from "ethers";
 import { CONFIG } from "./config";
 
 export const AEGIS_CROWN_ABI = [
-  "function mint(uint256 nonce) external",
+  "function mint(uint256 agentIdTokenId, uint256 nonce) external",
   "function challengeFor(address wallet) external view returns (bytes32)",
   "function tierOf(uint256 tokenId) external view returns (uint8)",
   "function totalMinted() external view returns (uint256)",
-  "function hasMinted(address wallet) external view returns (bool)",
+  "function agentIdUsed(uint256 agentIdTokenId) external view returns (bool)",
   "function tokenURI(uint256 tokenId) external view returns (string)",
 ] as const;
 
@@ -136,22 +136,22 @@ export class ContractService {
     return await this.aegisCrownContract.tokenURI(tokenId);
   }
 
-  async mint(nonce: number): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
+  async mint(agentIdTokenId: number, nonce: number): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
     if (this.mode === "mock") {
       return {
-        to: CONFIG.aegisCrownAddress,
+        to: CONFIG.nftV2,
         value: "0",
         gasLimit: "150000",
-        description: `Mint Aegis Crown with nonce ${nonce}`,
+        description: `Mint Aegis Crown V2 agentId=${agentIdTokenId} nonce=${nonce}`,
       };
     }
     if (!this.aegisCrownContract || !this.signer) throw new Error("NFT contract not initialized");
-    const tx = await this.aegisCrownContract.mint(nonce);
+    const tx = await this.aegisCrownContract.mint(agentIdTokenId, nonce);
     return {
-      to: CONFIG.aegisCrownAddress,
+      to: CONFIG.nftV2,
       value: "0",
       gasLimit: tx.gasLimit.toString(),
-      description: `Mint Aegis Crown with nonce ${nonce}`,
+      description: `Mint Aegis Crown V2 agentId=${agentIdTokenId} nonce=${nonce}`,
     };
   }
 }

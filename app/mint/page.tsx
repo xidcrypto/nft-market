@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { CONFIG } from "../lib/config";
 import { Footer } from "../components/footer-component";
-import { useMintedCount, formatLastUpdated } from "../lib/realtime";
+import { useMintedCount } from "../lib/realtime";
 
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text).catch(() => {});
@@ -21,7 +21,7 @@ export default function MintPage() {
     setTimeout(() => setCopied(null), 2000);
   }, []);
 
-  const minted = mintedCount ?? 0;
+  const minted = typeof mintedCount === "number" ? mintedCount : 0;
   const mintOpen = minted < 5000;
 
   return (
@@ -32,15 +32,15 @@ export default function MintPage() {
           <h2 className="text-lg font-semibold text-accent-gold mb-6">Mint for AI Agents</h2>
 
           <div className="space-y-3 text-sm text-secondary mb-8">
-            <p>Minting is on-chain, gas only, and limited to one per wallet for Agent ID holders.</p>
-            <p>Mint access is gated through the Agent ID registry contract.</p>
-            <p>Rarity is derived on-chain from the mint solution hash.</p>
+            <p>Minting is on-chain, gas only, and gated through the Agent ID registry.</p>
+            <p>Each Agent ID can mint once — forever. Transferring an Agent ID does not restore mint eligibility.</p>
+            <p>Rarity is derived on-chain from the mint solution hash (difficulty 22).</p>
           </div>
 
           <div className="space-y-3 text-xs mb-8">
             {[
-              { key: "nft", label: "NFT Contract:", value: CONFIG.aegisCrownAddress },
-              { key: "market", label: "Market Contract:", value: CONFIG.aegisMarketAddress },
+              { key: "nft", label: "NFT Contract V2:", value: CONFIG.nftV2 },
+              { key: "market", label: "Market Contract V2:", value: CONFIG.marketV2 },
               { key: "registry", label: "Agent ID Registry:", value: CONFIG.registryAddress },
             ].map((field) => (
               <div key={field.key} className="flex gap-2">
@@ -66,26 +66,47 @@ export default function MintPage() {
               </div>
             ))}
             <div className="flex gap-2">
+              <span className="text-secondary shrink-0">V1 Legacy NFT:</span>
+              <span className="text-primary font-mono text-[10px]">{CONFIG.aegisCrownAddress}</span>
+            </div>
+            <div className="flex gap-2">
               <span className="text-secondary shrink-0">Chain ID:</span>
               <span className="text-primary font-mono">56 (BNB Smart Chain)</span>
             </div>
           </div>
 
-          <h3 className="text-sm font-semibold text-primary mb-4">Agent Mint Steps</h3>
+          <h3 className="text-sm font-semibold text-primary mb-4">Agent Mint Steps (V2)</h3>
           <ol className="list-decimal list-inside space-y-3 text-sm text-secondary mb-8">
-            <li>Call <code className="text-accent-gold font-mono">challengeFor(yourWallet)</code> to get your challenge hash.</li>
-            <li>Find a nonce where <code className="text-accent-gold font-mono">keccak256(challenge, nonce)</code> has at least 16 leading zero bits.</li>
-            <li>Call <code className="text-accent-gold font-mono">mint(nonce)</code> with value 0, after previewing (no allowance, no authority change).</li>
-            <li>Rarity derived on-chain: 0=Common/Scout/Power 10, 1=Rare/Validator/25, 2=Epic/Sentinel/50, 3=Legendary/Genesis/100, 4=Mythic/Apex/150.</li>
+            <li>
+              Find your Agent ID tokenId on <a href="https://bscscan.com/token/0x60B9262456dE011F7d15a54CdD8c48bAaa8B022F" target="_blank" rel="noopener noreferrer" className="text-accent-gold hover:underline">BscScan</a> (tokenOfOwnerByIndex / totalSupply are not available — look up by wallet).
+            </li>
+            <li>
+              Call <code className="text-accent-gold font-mono">challengeFor(yourWallet)</code> on the NFT V2 contract to get your challenge hash.
+            </li>
+            <li>
+              Find a nonce where <code className="text-accent-gold font-mono">keccak256(challenge, nonce)</code> has at least <span className="font-mono">22 leading zero bits</span> (difficulty 22, ~4.2M hashes, ~10-30s on CPU).
+            </li>
+            <li>
+              Call <code className="text-accent-gold font-mono">mint(agentIdTokenId, nonce)</code> with value 0, after previewing (no allowance, no authority change).
+            </li>
+            <li>
+              Requires: <code className="text-accent-gold font-mono">ownerOf(agentIdTokenId) == yourWallet</code> and that Agent ID has not been used to mint before.
+            </li>
+            <li>
+              Rarity from solution hash: &lt;1% Mythic, &lt;3% Legendary, &lt;15% Epic, &lt;40% Rare, rest Common. Power: Common 10, Rare 25, Epic 50, Legendary 100, Mythic 150.
+            </li>
             <li>Report tx hash and tier.</li>
           </ol>
 
           <div className="pt-4 border-t border-border text-xs text-secondary mb-6">
             <p className="mb-2">
-              Total minted: <span className="text-primary font-mono tabular-nums">{minted}</span> / 5,000
+              Total minted (V2): <span className="text-primary font-mono tabular-nums">{minted}</span> / 5,000
             </p>
             <p>
               Mint open: <span className="text-primary">{mintOpen ? "Yes" : "No"}</span>
+            </p>
+            <p className="mt-1">
+              V1 (legacy): {CONFIG.v1Minted} minted, mint closed — no new mints on V1.
             </p>
           </div>
 

@@ -133,6 +133,17 @@ export function useMarketListings(options: RealtimeOptions = {}) {
   );
 }
 
+export function useMints(limit = 20, offset = 0, tier?: string, options: RealtimeOptions = {}) {
+  return useRealtime<ApiMint[]>(
+    () =>
+      fetchMints(limit, offset, tier).then((r) => {
+        const d = r.data;
+        return d ?? [];
+      }),
+    { interval: 30000, ...options }
+  );
+}
+
 export function useMintedCount(options: RealtimeOptions = {}) {
   return useRealtime<number>(
     async () => {

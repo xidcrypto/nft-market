@@ -20,9 +20,8 @@ export const AEGIS_MARKET_ABI = [
   "function cancel(uint256 tokenId) external",
   "function listings(uint256 tokenId) external view returns (address seller, uint256 price, bool active)",
   "function feeRecipient() external view returns (address)",
-  "function sellFeePercent() external view returns (uint256)",
   "event Listed(address indexed seller, uint256 indexed tokenId, uint256 price)",
-  "event Bought(address indexed buyer, uint256 indexed tokenId, uint256 price, uint256 fee)",
+  "event Bought(address indexed buyer, uint256 indexed tokenId, uint256 price)",
   "event Cancelled(address indexed seller, uint256 indexed tokenId)",
 ] as const;
 

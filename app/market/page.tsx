@@ -23,20 +23,20 @@ type SortOption = "price-asc" | "price-desc" | "newest" | "rarity";
 
 function parseTierFromToken(tokenId: number): number | null {
   const rand = tokenId % 5000;
-  if (rand < 3000) return 1;
-  if (rand < 4250) return 2;
-  if (rand < 4850) return 3;
-  if (rand < 4950) return 4;
-  return 5;
+  if (rand < 3000) return 0;
+  if (rand < 4250) return 1;
+  if (rand < 4850) return 2;
+  if (rand < 4950) return 3;
+  return 4;
 }
 
 function getTierNameFromTierNum(tierNum: number): string {
   const names: Record<number, string> = {
-    1: "Common",
-    2: "Rare",
-    3: "Epic",
-    4: "Legendary",
-    5: "Mythic",
+    0: "Common",
+    1: "Rare",
+    2: "Epic",
+    3: "Legendary",
+    4: "Mythic",
   };
   return names[tierNum] ?? "Unknown";
 }
@@ -204,7 +204,7 @@ export default function MarketPage() {
       const tierNum = parseTierFromToken(0); // placeholder
       // Filter by tier - we infer from tokenId
       const tierMapping: Record<string, number> = {
-        common: 1, rare: 2, epic: 3, legendary: 4, mythic: 5,
+        common: 0, rare: 1, epic: 2, legendary: 3, mythic: 4,
       };
       const targetTier = tierMapping[tierFilter] ?? 0;
       items = items.filter(l => parseTierFromToken(l.tokenId) === targetTier);
@@ -228,8 +228,8 @@ export default function MarketPage() {
         case "newest":
           return (b.timestamp ?? 0) - (a.timestamp ?? 0);
         case "rarity":
-          const ta = parseTierFromToken(a.tokenId) ?? 1;
-          const tb = parseTierFromToken(b.tokenId) ?? 1;
+          const ta = parseTierFromToken(a.tokenId) ?? 0;
+          const tb = parseTierFromToken(b.tokenId) ?? 0;
           return tb - ta;
         default:
           return 0;
@@ -470,7 +470,7 @@ export default function MarketPage() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {sortedListings.map(l => {
-                    const tier = parseTierFromToken(l.tokenId) ?? 1;
+                    const tier = parseTierFromToken(l.tokenId) ?? 0;
                     const tierInfo = getTierInfo(tier);
                     return (
                       <div key={l.tokenId} className="bg-gray-800/50 rounded-xl border border-gray-700 overflow-hidden transition-transform hover:border-yellow-500">

@@ -233,11 +233,11 @@ export default function MininlistPage() {
                   className="bg-neutral-800/50 border border-neutral-700 rounded-xl px-4 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="all">All Tiers</option>
-                  <option value="5">Mythic</option>
-                  <option value="4">Legendary</option>
-                  <option value="3">Epic</option>
-                  <option value="2">Rare</option>
-                  <option value="1">Common</option>
+                  <option value="4">Mythic</option>
+                  <option value="3">Legendary</option>
+                  <option value="2">Epic</option>
+                  <option value="1">Rare</option>
+                  <option value="0">Common</option>
                 </select>
                 <button
                   onClick={fetchListings}
@@ -292,10 +292,10 @@ export default function MininlistPage() {
                             />
                             <div className="absolute top-2 left-2">
                               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                                tier === 5 ? "bg-red-500/20 text-red-400" :
-                                tier === 4 ? "bg-yellow-500/20 text-yellow-400" :
-                                tier === 3 ? "bg-blue-500/20 text-blue-400" :
-                                tier === 2 ? "bg-green-500/20 text-green-400" :
+                                tier === 4 ? "bg-red-500/20 text-red-400" :
+                                tier === 3 ? "bg-yellow-500/20 text-yellow-400" :
+                                tier === 2 ? "bg-blue-500/20 text-blue-400" :
+                                tier === 1 ? "bg-green-500/20 text-green-400" :
                                 "bg-gray-500/20 text-gray-400"
                               }`}>
                                 {getTierInfo(tier)?.name?.split(" —")[0] ?? `Tier ${tier}`}

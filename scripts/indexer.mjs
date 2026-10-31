@@ -31,7 +31,7 @@ const AEGIS_CROWN_ABI = [
 
 const AEGIS_MARKET_ABI = [
   "event Listed(address indexed seller, uint256 indexed tokenId, uint256 price)",
-  "event Bought(address indexed buyer, uint256 indexed tokenId, uint256 price, uint256 fee)",
+  "event Bought(address indexed buyer, uint256 indexed tokenId, uint256 price)",
   "event Cancelled(address indexed seller, uint256 indexed tokenId)",
 ];
 
@@ -135,18 +135,15 @@ async function main() {
 
     for (const evt of boughtEvents) {
       const price = evt.args.price;
-      const fee = evt.args.fee;
-      const total = price + fee; // total paid by buyer
-      totalVolume += total;
+      totalVolume += price;
 
       const timestamp = boughtBlockTimestamps.get(evt.blockNumber) || now;
-      if (now - timestamp <= dayMs) volume24h += total;
-      if (now - timestamp <= weekMs) volume7d += total;
+      if (now - timestamp <= dayMs) volume24h += price;
+      if (now - timestamp <= weekMs) volume7d += price;
 
       recentSales.push({
         tokenId: Number(evt.args.tokenId),
         price: price.toString(),
-        fee: fee.toString(),
         buyer: evt.args.buyer,
         seller: "", // would need to track from Listed event
         timestamp,
@@ -265,8 +262,6 @@ async function main() {
         tokenId: s.tokenId,
         price: s.price,
         priceBnb: parseFloat(ethers.formatEther(s.price)).toFixed(4),
-        fee: s.fee,
-        feeBnb: parseFloat(ethers.formatEther(s.fee)).toFixed(4),
         buyer: s.buyer,
         seller: s.seller,
         timestamp: s.timestamp,

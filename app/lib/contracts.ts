@@ -14,12 +14,11 @@ export const AEGIS_MARKET_ABI = [
   "function list(uint256 tokenId, uint256 price) external",
   "function buy(uint256 tokenId) external payable",
   "function cancel(uint256 tokenId) external",
-  "function listings(uint256 tokenId) external view returns (address seller, uint256 price, bool active)",
+  "function listings(uint256 tokenId) external view returns (address seller, uint256 price)",
   "function feeRecipient() external view returns (address)",
-  "function sellFeePercent() external view returns (uint256)",
-  "event Listed(address indexed seller, uint256 indexed tokenId, uint256 price)",
-  "event Bought(address indexed buyer, uint256 indexed tokenId, uint256 price, uint256 fee)",
-  "event Cancelled(address indexed seller, uint256 indexed tokenId)",
+  "event Listed(uint256 indexed tokenId, address indexed seller, uint256 price)",
+  "event Bought(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price, uint256 fee)",
+  "event Cancelled(uint256 indexed tokenId, address indexed seller)",
 ] as const;
 
 export const ERC721_ABI = [
@@ -117,11 +116,11 @@ export class ContractService {
   async tierOf(tokenId: number): Promise<number> {
     if (this.mode === "mock") {
       const rng = Math.random() * 100;
-      if (rng < 60) return 1;
-      if (rng < 85) return 2;
-      if (rng < 97) return 3;
-      if (rng < 99) return 4;
-      return 5;
+      if (rng < 60) return 0;
+      if (rng < 85) return 1;
+      if (rng < 97) return 2;
+      if (rng < 99) return 3;
+      return 4;
     }
     if (!this.aegisCrownContract) throw new Error("NFT contract not initialized");
     const result = await this.aegisCrownContract.tierOf(tokenId);
@@ -131,7 +130,7 @@ export class ContractService {
   async tokenURI(tokenId: number): Promise<string> {
     if (this.mode === "mock") {
       const tier = await this.tierOf(tokenId);
-      return `${CONFIG.baseUri}${getTierName(tier as 1 | 2 | 3 | 4 | 5)}.json`;
+      return `${CONFIG.baseUri}${getTierName(tier as 0 | 1 | 2 | 3 | 4)}.json`;
     }
     if (!this.aegisCrownContract) throw new Error("NFT contract not initialized");
     return await this.aegisCrownContract.tokenURI(tokenId);
@@ -157,13 +156,13 @@ export class ContractService {
   }
 }
 
-export function getTierName(tierNum: 1 | 2 | 3 | 4 | 5): string {
-  const names: Record<1 | 2 | 3 | 4 | 5, string> = {
-    1: "common",
-    2: "rare",
-    3: "epic",
-    4: "legendary",
-    5: "mythic",
+export function getTierName(tierNum: 0 | 1 | 2 | 3 | 4): string {
+  const names: Record<0 | 1 | 2 | 3 | 4, string> = {
+    0: "common",
+    1: "rare",
+    2: "epic",
+    3: "legendary",
+    4: "mythic",
   };
   return names[tierNum];
 }
@@ -234,27 +233,12 @@ export class MarketContractService {
   }
 
   async buy(tokenId: number, price: string): Promise<{ to: string; value: string; gasLimit: string; description: string }> {
-    if (this.mode === "mock") {
-      const value = ethers.parseUnits(price, 18);
-      const fee = value * BigInt(3) / BigInt(100);
-      const total = value + fee;
-      return {
-        to: CONFIG.aegisMarketAddress,
-        value: ethers.formatEther(total),
-        gasLimit: "200000",
-        description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB (includes 3% fee)`,
-      };
-    }
-    if (!this.marketContract) throw new Error("Market contract not initialized");
-    const value = ethers.parseUnits(price, 18);
-    const tx = await this.marketContract.buy(tokenId, { value });
-    const fee = value * BigInt(3) / BigInt(100);
-    const total = value + fee;
+    const priceWei = ethers.parseUnits(price, 18);
     return {
       to: CONFIG.aegisMarketAddress,
-      value: ethers.formatEther(total),
-      gasLimit: tx.gasLimit.toString(),
-      description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB`,
+      value: price,
+      gasLimit: "200000",
+      description: `Buy tokenId #${tokenId} for ${formatPriceBnb(price)} BNB (3% fee to creator is deducted from the price inside the contract, seller receives 97%)`,
     };
   }
 
